@@ -1,5 +1,0 @@
-# Format: x, y, orientation
-# x and y are the motor positions relative to the drone's center
-# orientation is the angle (in degrees) of the motor's thrust direction
--100, 0, 90
-100, 0, 90
