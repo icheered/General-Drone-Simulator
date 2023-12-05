@@ -20,25 +20,42 @@ class Display:
         self.clock = pygame.time.Clock()
 
     def _draw_drone(self, drone):
-        # Draw the drone body
+        # Drone state
         state = drone.get_state()
         drone_x, drone_y, _, _, rotation, _ = state
+        
+        width = abs(min([motor[0] for motor in drone.motors]) - max([motor[0] for motor in drone.motors]))
+        height = abs(min([motor[1] for motor in drone.motors]) - max([motor[1] for motor in drone.motors]))
 
+        surface_width = max(width*100 + MOTOR_SIZE, DRONE_SIZE)
+        surface_height = max(height*100 + MOTOR_SIZE, DRONE_SIZE)
 
-        drone_rect = pygame.Rect(drone_x - DRONE_SIZE/2, drone_y - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
-        pygame.draw.rect(self.screen, WHITE, drone_rect)
+        drone_surface = pygame.Surface((surface_width, surface_height), pygame.SRCALPHA)  # Use SRCALPHA for transparency
+
+        # Draw the drone rectangle on the surface
+        drone_rect = pygame.Rect(surface_width/2 - DRONE_SIZE/2, surface_height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
+        pygame.draw.rect(drone_surface, WHITE, drone_rect)
 
         # Draw the motors
         for motor in drone.motors:
             motor_x, motor_y, _ = motor
 
-            # Rotate motor position around the center of the drone
-            rotated_x = (motor_x * math.cos(rotation)) - (motor_y * math.sin(rotation))
-            rotated_y = (motor_x * math.sin(rotation)) + (motor_y * math.cos(rotation))
+            motor_x_scaled = motor_x * 100 + surface_width/2
+            motor_y_scaled = motor_y * 100 + surface_height/2
 
-            # Translate to drone's position
-            motor_rect = pygame.Rect(drone_x + rotated_x - MOTOR_SIZE/2, drone_y + rotated_y - MOTOR_SIZE/2, MOTOR_SIZE, MOTOR_SIZE)
-            pygame.draw.rect(self.screen, RED, motor_rect)
+            motor_rect = pygame.Rect(motor_x_scaled - MOTOR_SIZE/2, motor_y_scaled - MOTOR_SIZE/2, MOTOR_SIZE, MOTOR_SIZE)
+            pygame.draw.rect(drone_surface, RED, motor_rect)
+
+        # Rotate the combined drone and motors surface
+        rotation = rotation * 180 / math.pi
+        rotated_drone_surface = pygame.transform.rotate(drone_surface, -rotation)
+
+        # Calculate the center position for blitting
+        blit_x = drone_x - rotated_drone_surface.get_width() / 2
+        blit_y = drone_y - rotated_drone_surface.get_height() / 2
+
+        # Draw the rotated drone surface on the screen
+        self.screen.blit(rotated_drone_surface, (blit_x, blit_y))
 
 
     def update(self, drone):

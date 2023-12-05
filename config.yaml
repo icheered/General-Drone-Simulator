@@ -3,13 +3,11 @@ display:
   height: 600
   update_frequency: 60
 
-environment:
-  gravity: 3
-
 drone:
-  thrust: 10 # Newtons
+  thrust: 40 # Newtons
   mass: 0.1 # Kilograms
-  inertia: 25 # Kilogram meters squared
+  inertia: 2 # Kilogram meters squared
+  gravity: 2
   motors:
-    - [-50, 0, 90] # X offset from drone center, Y offset from drone center, rotation relative to drone center
-    - [50, 0, 90]
+    - [-0.5, 0, -90] # X offset from drone center, Y offset from drone center, rotation relative to drone center
+    - [0.5, 0, -90]
