@@ -1,6 +1,7 @@
 from src.display import Display
 from src.drone import Drone
 from src.human import Human
+from src.agent import Agent
 from src.utils import read_config
 
 
@@ -21,6 +22,16 @@ def main():
 
     human = Human(
         input_length=len(config["drone"]["motors"]),
+    )
+
+    agent = Agent(
+        layers=[
+            len(drone.get_state()),
+            64,
+            64,
+            len(config["drone"]["motors"]),
+        ],
+        screen=config["display"],
     )
 
     while True:
