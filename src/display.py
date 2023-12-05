@@ -6,6 +6,7 @@ pygame.init()
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+GREEN = (0,255,0)
 DRONE_SIZE = 40  # Size of the drone square
 MOTOR_SIZE = 10   # Size of the motor squares
 
@@ -57,9 +58,14 @@ class Display:
         # Draw the rotated drone surface on the screen
         self.screen.blit(rotated_drone_surface, (blit_x, blit_y))
 
+    def _draw_target(self, target):
+        # Draw a dot and a circle around the target with radius 50
+        pygame.draw.circle(self.screen, GREEN, (target["x"], target["y"]), target["distance"], 1)
+        pygame.draw.circle(self.screen, GREEN, (target["x"], target["y"]), 2)
 
-    def update(self, drone):
-       self.clock.tick(60)
-       self.screen.fill(BLACK)
-       self._draw_drone(drone)
-       pygame.display.flip()
+    def update(self, drone, target):
+        self.clock.tick(60)
+        self.screen.fill(BLACK)
+        self._draw_drone(drone)
+        self._draw_target(target)
+        pygame.display.flip()

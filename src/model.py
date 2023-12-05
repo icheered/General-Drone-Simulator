@@ -6,21 +6,25 @@ import os
 import numpy as np
 
 class Linear_QNet(nn.Module):
-    def __init__(self, layers: list):
+    def __init__(self, layers: list, dropout_p: float = 0.2):
         super().__init__()
         self.layers = layers
 
         # Add layers
         self.layers = nn.ModuleList()
+        # Iterate through the layers and add linear and dropout layers
         for i in range(len(layers) - 1):
             self.layers.append(nn.Linear(layers[i], layers[i + 1]))
+            # Add a dropout layer after each linear layer except the last one
+            if i < len(layers) - 2:
+                self.layers.append(nn.Dropout(p=dropout_p))
+
     
 
     def forward(self, x):
-        # Forward propagation
         for layer in self.layers[:-1]:
             x = F.relu(layer(x))
-        x = self.layers[-1](x)
+        x = torch.sigmoid(self.layers[-1](x))  # Apply sigmoid to the last layer
         return x
 
     def save(self, file_name='model.pth'):
@@ -45,7 +49,7 @@ class QTrainer:
         state = np.array(state)
         state = torch.tensor(state, dtype=torch.float)
         next_state = torch.tensor(next_state, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.long)
+        action = torch.tensor(action, dtype=torch.float)
         reward = torch.tensor(reward, dtype=torch.float)
 
         if len(state.shape) == 1:

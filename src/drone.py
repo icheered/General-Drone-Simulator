@@ -10,6 +10,8 @@ plt.ion()
 class Drone:
     def __init__(self, startx: int, starty: int, display: dict, config: dict, update_frequency: float = 60):
         # Positions global, rotations local
+        self.startx = startx
+        self.starty = starty
         self.state = [
             startx,  # Position x
             starty,  # Position y
@@ -18,7 +20,6 @@ class Drone:
             0,  # Rotation
             0,  # Angular velocity
         ]
-        self.history = [self.state]
 
         self.motors = config["motors"]
         self.mass = config["mass"]
@@ -33,8 +34,30 @@ class Drone:
         self.dt = 1 / self.update_frequency
         
 
+    def reset_state(self):
+        self.state = [
+            self.startx,  # Position x
+            self.starty,  # Position y
+            0,  # Velocity x
+            0,  # Velocity y
+            0,  # Rotation
+            0,  # Angular velocity
+        ]
+        return self.state, self.get_normalized_state()
+
     def get_state(self):
         return self.state
+    
+    def get_normalized_state(self):
+        # Normalize the state to be between 0 and 1
+        normalized_state = copy.deepcopy(self.state)
+        normalized_state[0] /= self.max_x
+        normalized_state[1] /= self.max_y
+        normalized_state[2] /= self.max_x
+        normalized_state[3] /= self.max_y
+        normalized_state[4] = (normalized_state[4] + 180) / 360
+        normalized_state[5] /= 360
+        return normalized_state
     
     def print_state(self):
         # Print entire state all rounded to 2 decimals
@@ -79,20 +102,27 @@ class Drone:
         self.state[3] += self.gravity * 100 * self.dt
     
     def _ensure_drone_within_screen(self):
+        done = False
         # Ensure drone stays within the screen
         if self.state[0] < 0:
             self.state[0] = 0
             self.state[2] = 0
+            done = True
         elif self.state[0] > self.max_x:
             self.state[0] = self.max_x
             self.state[2] = 0
+            done = True
 
         if self.state[1] < 0:
             self.state[1] = 0
             self.state[3] = 0
+            done = True
         elif self.state[1] > self.max_y:
             self.state[1] = self.max_y
             self.state[3] = 0
+            done = True
+
+        return done
     
     def _update_state_timestep(self):
         # Update state
@@ -108,6 +138,6 @@ class Drone:
         self._apply_action(inputs)
         self._apply_gravity()
         self._update_state_timestep()
-        self._ensure_drone_within_screen()
+        done = self._ensure_drone_within_screen()
 
-        return self.state    
+        return self.state, self.get_normalized_state(), done
