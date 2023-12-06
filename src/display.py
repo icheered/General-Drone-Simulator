@@ -58,14 +58,61 @@ class Display:
         # Draw the rotated drone surface on the screen
         self.screen.blit(rotated_drone_surface, (blit_x, blit_y))
 
+    
+    def _draw_state(self, state):
+        font = pygame.font.SysFont(None, 24)
+        y_offset = 20  # Starting y position for the first line of text
+        x_offset = 20  # Starting x position for the first line of text
+        line_height = 25  # Height of each line of text
+
+        state_labels = ["x", "y", "vx", "vy", "phi", "vphi"]
+
+        for label, value in zip(state_labels, state):
+            text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
+            self.screen.blit(text, (x_offset, y_offset))
+            y_offset += line_height
+
+    def _draw_agent_state(self, agent):
+        font = pygame.font.SysFont(None, 24)
+        y_offset = 20
+        x_offset = 20
+
+        text = font.render(f"Game: {agent.n_games}", True, WHITE)
+        self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
+
+        y_offset += 25
+
+        text = font.render(f"Epsilon: {round(agent.epsilon*100, 1)}", True, WHITE)
+        self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
+
+
+    def _draw_action(self, action):
+        # Draw at the bottom left
+        font = pygame.font.SysFont(None, 24)
+        y_offset = self.height - 150
+        line_height = 25
+
+        text = font.render("Action:", True, WHITE)
+        self.screen.blit(text, (0, y_offset))
+        y_offset += line_height
+
+        for i, value in enumerate(action):
+            text = font.render(f"{i}: {round(value * 100)}", True, WHITE)
+            self.screen.blit(text, (0, y_offset))
+            y_offset += line_height
+
+        
+
     def _draw_target(self, target):
         # Draw a dot and a circle around the target with radius 50
         pygame.draw.circle(self.screen, GREEN, (target["x"], target["y"]), target["distance"], 1)
         pygame.draw.circle(self.screen, GREEN, (target["x"], target["y"]), 2)
 
-    def update(self, drone, target):
+    def update(self, drone, agent, target):
         self.clock.tick(60)
         self.screen.fill(BLACK)
         self._draw_drone(drone)
         self._draw_target(target)
+        self._draw_state(drone.get_normalized_state(target))
+        self._draw_agent_state(agent)
         pygame.display.flip()

@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import copy
+import random 
 
 fig, axes = plt.subplots(3, 1, figsize=(10, 12))
 plt.ion()
@@ -12,14 +13,8 @@ class Drone:
         # Positions global, rotations local
         self.startx = startx
         self.starty = starty
-        self.state = [
-            startx,  # Position x
-            starty,  # Position y
-            0,  # Velocity x
-            0,  # Velocity y
-            0,  # Rotation
-            0,  # Angular velocity
-        ]
+        self.survive_duration = 0
+        self.reset_state()
 
         self.motors = config["motors"]
         self.mass = config["mass"]
@@ -35,30 +30,36 @@ class Drone:
         
 
     def reset_state(self):
+        self.survive_duration = 0
+
+        # Define ranges for randomization
+        position_range = 20  # Adjust as needed
+        velocity_range = 10  # Adjust as needed
+        rotation_range = 0.1     # Radians, adjust as needed
+        angular_velocity_range = 0.8  # Adjust as needed
+
         self.state = [
-            self.startx,  # Position x
-            self.starty,  # Position y
-            0,  # Velocity x
-            0,  # Velocity y
-            0,  # Rotation
-            0,  # Angular velocity
+            self.startx + random.uniform(-position_range, position_range),  # Position x
+            self.starty + random.uniform(-position_range, position_range),  # Position y
+            random.uniform(-velocity_range, velocity_range),  # Velocity x
+            random.uniform(-velocity_range, velocity_range),  # Velocity y
+            random.uniform(-rotation_range, rotation_range),  # Rotation
+            random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
         ]
-        return self.state, self.get_normalized_state()
 
     def get_state(self):
         return self.state
     
-    def get_normalized_state(self):
+    def get_normalized_state(self, target: dict):
         # Normalize the state to be between 0 and 1
-        normalized_state = copy.deepcopy(self.state)
-        normalized_state[0] /= self.max_x
-        normalized_state[1] /= self.max_y
-        normalized_state[2] /= self.max_x
-        normalized_state[3] /= self.max_y
-        normalized_state[4] = (normalized_state[4] + 180) / 360
-        normalized_state[5] /= 360
-        return normalized_state
+        n_state = copy.deepcopy(self.state)
+        n_state[0] = (n_state[0] - target["x"]) / self.max_x
+        n_state[1] = (n_state[1] - target["y"]) / self.max_y
+        n_state[2] /= self.max_x
+        n_state[3] /= self.max_y
+        return n_state
     
+
     def print_state(self):
         # Print entire state all rounded to 2 decimals
         print([round(x, 2) for x in self.state])
@@ -140,4 +141,6 @@ class Drone:
         self._update_state_timestep()
         done = self._ensure_drone_within_screen()
 
-        return self.state, self.get_normalized_state(), done
+        self.survive_duration += self.dt
+
+        return done

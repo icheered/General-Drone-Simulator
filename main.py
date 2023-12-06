@@ -7,6 +7,9 @@ from src.utils import read_config
 
 def initialize():
     config = read_config("config.yaml")
+    monitor = Monitor(config)
+    monitor.update_plot()
+
     display = Display(
         config=config["display"],
         update_frequency=config["display"]["update_frequency"],
@@ -29,30 +32,32 @@ def initialize():
         config=config
     )
 
-    monitor = Monitor()
+
 
     return display, monitor, drone, human, agent
 
 def main():
     display, monitor, drone, human, agent = initialize()
 
-    state, normalized_state = drone.get_state(), drone.get_normalized_state()
-    
-    total_reward = 0
     target = {
         "x": display.width // 2,
         "y": display.height // 2,
         "distance": 100
     }
+    state, normalized_state = drone.get_state(), drone.get_normalized_state(target)
+    
+    total_reward = 0
+    
     while True:
         previous_state = normalized_state
         #action = human.get_action()
-        action = agent.get_action(state=drone.get_normalized_state())
+        action = agent.get_action(state=drone.get_normalized_state(target))
         
-        state, normalized_state, done = drone.update_state(inputs=action)
+        done = drone.update_state(inputs=action)
+        state, normalized_state = drone.get_state(), drone.get_normalized_state(target)
         
         if agent.n_games % 10 == 0:
-            display.update(drone, target)
+            display.update(drone, agent, target)
         reward = agent.get_reward(state=state, target=target, done=done)
         total_reward += reward
         
@@ -60,12 +65,13 @@ def main():
         agent.remember(previous_state, action, reward, normalized_state, done)
         
         if done:
-            state, normalized_state = drone.reset_state()
+            monitor.log_data(total_reward, drone.survive_duration)
+            monitor.update_plot()
+            drone.reset_state()
+            state, normalized_state = drone.get_state(), drone.get_normalized_state(target)
             agent.n_games += 1
             agent.train_long_memory()
             print(f"Game {agent.n_games} done, epsilon: {round(agent.epsilon*100,1)}, total reward: {round(total_reward)}")
-            monitor.log_reward(total_reward)
-            monitor.update_plot()
             total_reward = 0
         
 
