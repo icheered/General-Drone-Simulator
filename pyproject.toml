@@ -12,6 +12,7 @@ pyyaml = "^6.0.1"
 numpy = "^1.26.2"
 matplotlib = "^3.8.2"
 torch = "^2.1.1"
+gymnasium = "^0.29.1"
 
 
 [build-system]
