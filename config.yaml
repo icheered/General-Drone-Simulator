@@ -11,7 +11,7 @@ agent:
   batch_size: 100       # Number of experiences to sample per training step
   learning_rate: 0.001  # Learning rate
   layers: [64, 64]      # Number of neurons in the hidden layers
-  dropout_p: 0.1        # Dropout rate
+  dropout_p: 0.3        # Dropout rate
 
 drone:
   thrust: 40            # Newtons

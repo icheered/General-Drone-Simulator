@@ -33,7 +33,7 @@ class Drone:
         self.survive_duration = 0
 
         # Define ranges for randomization
-        position_range = 20  # Adjust as needed
+        position_range = 100  # Adjust as needed
         velocity_range = 10  # Adjust as needed
         rotation_range = 0.1     # Radians, adjust as needed
         angular_velocity_range = 0.8  # Adjust as needed

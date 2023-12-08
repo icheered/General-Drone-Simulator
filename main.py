@@ -4,6 +4,7 @@ from src.human import Human
 from src.agent import Agent
 from src.monitor import Monitor
 from src.utils import read_config
+import time
 
 def initialize():
     config = read_config("config.yaml")
@@ -58,6 +59,7 @@ def main():
         
         if agent.n_games % 10 == 0:
             display.update(drone, agent, target)
+            #time.sleep(1)
         reward = agent.get_reward(state=state, target=target, done=done)
         total_reward += reward
         
