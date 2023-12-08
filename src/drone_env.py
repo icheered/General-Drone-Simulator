@@ -74,21 +74,23 @@ class DroneEnv(Env):
             random.uniform(-rotation_range, rotation_range),  # Rotation
             random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
         ]
+            
+            # self.state = [
+            #     0,  # Position x
+            #     0,  # Position y
+            #     0,  # Velocity x
+            #     0,  # Velocity y
+            #     0,  # Rotation
+            #     0,  # Angular velocity
+            # ]
 
-        # self.state = [
-        #     0,  # Position x
-        #     0,  # Position y
-        #     0,  # Velocity x
-        #     0,  # Velocity y
-        #     0,  # Rotation
-        #     0,  # Angular velocity
-        # ]
-
-        # obs must be a numpy array
-        obs = np.array(self.state)
+        # Convert the state to a numpy array with dtype float32
+        obs = np.array(self.state, dtype=np.float32)
         info = {}
         return obs, info
-    
+
+            
+
     
     def render(self):
         mode = self.render_mode
@@ -102,7 +104,6 @@ class DroneEnv(Env):
 
     # What is type type of action?
     def step(self, action):
-
         # Apply motor inputs
         self._apply_action(action)
         self._apply_gravity()
@@ -113,7 +114,13 @@ class DroneEnv(Env):
 
         info = {}
 
-        return self.state, reward, done, info
+        truncated = False
+
+        # Convert state to numpy array with dtype float32, if not already done
+        obs = np.array(self.state, dtype=np.float32)
+
+        return obs, reward, done, truncated, info
+
     
     def _get_reward(self, done: bool):
         # Calculate reward

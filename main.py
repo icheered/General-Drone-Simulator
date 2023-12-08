@@ -5,6 +5,7 @@ from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.env_checker import check_env
 
 from src.drone_env import DroneEnv
 from src.utils import read_config
@@ -41,14 +42,10 @@ def print_state(state):
 
 
 
-from stable_baselines3.common.env_checker import check_env
 
 env = DroneEnv(config)
 check_env(env, warn=True)
-# env = DummyVecEnv([lambda: env])
-# model = DQN('MlpPolicy', env, tensorboard_log=log_dir)
+env = DummyVecEnv([lambda: env])
+model = DQN('MlpPolicy', env, tensorboard_log=log_dir)
 
-
-
-
-# model.learn(total_timesteps=100000, progress_bar=True)
+model.learn(total_timesteps=100000, progress_bar=True)
