@@ -3,19 +3,25 @@ from gymnasium.spaces import Box, Discrete
 import numpy as np
 import random
 import math
+from src.display import Display
+import time
 
 class DroneEnv(Env):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, render_mode = None):
         self.motors = config["drone"]["motors"]
         self.mass = config["drone"]["mass"]
         self.inertia = config["drone"]["inertia"]
         self.thrust = config["drone"]["thrust"]
         self.gravity = config["drone"]["gravity"]
 
-        self.max_x = config["display"]["width"]
-        self.max_y = config["display"]["height"]
         self.update_frequency = config["display"]["update_frequency"]
         self.dt = 1 / self.update_frequency
+
+        self.target = {
+            "x": config["target"]["x"],
+            "y": config["target"]["y"],
+            "distance": config["target"]["distance"]
+        }
 
         # Action space is 2 motors, each either 0 or 1
         # DQN can only handle discrete action spaces
@@ -36,7 +42,24 @@ class DroneEnv(Env):
         # Reset to initialize the state 
         self.reset()
 
-    def reset(self):
+        # Initialize the display
+        self.render_mode = render_mode
+        if(self.render_mode == "human"):
+            self.display = Display(
+                config=config,
+                title="Drone Simulation"
+            )
+
+    def get_state(self):
+        return self.state
+    
+    def seed(self, seed=None):
+        # Set the seed
+        random.seed(seed)
+        # Return the seed
+        return [seed]
+
+    def reset(self, seed=None):
         # Define ranges for randomization
         position_range = 0.1
         velocity_range = 0.1
@@ -61,15 +84,20 @@ class DroneEnv(Env):
         #     0,  # Angular velocity
         # ]
 
-        pass
+        # obs must be a numpy array
+        obs = np.array(self.state)
+        info = {}
+        return obs, info
     
     
-    def render(self, mode='human'):
+    def render(self):
+        mode = self.render_mode
         assert mode in ["human", None], "Invalid mode, must be either \"human\" or None"
         if mode == None:
             return
-        
-        pass
+        elif mode == "human":
+            self.display.update(self)
+            #time.sleep(0.1)
 
 
     # What is type type of action?
@@ -80,7 +108,7 @@ class DroneEnv(Env):
         self._apply_gravity()
         self._update_state_timestep()
 
-        done = self._ensure_drone_within_screen()
+        done = self._ensure_state_within_boundaries()
         reward = self._get_reward(done)
 
         info = {}
@@ -95,16 +123,16 @@ class DroneEnv(Env):
         # Calculate Euclidean distance from the target
         distance = np.sqrt(self.state[0] ** 2 + self.state[2] ** 2)
 
-        distance_reward = 1 / distance
+        distance_reward = 1 - distance / self.target["distance"]
 
-        if distance < 5:
-            # Avoid division by zero and getting infinite reward
-            distance_reward = 1
+        # if distance < 5:
+        #     # Avoid division by zero and getting infinite reward
+        #     distance_reward = 1
         
         # Add a constant reward for survival/progress
-        constant_reward = 0.1
+        #constant_reward = 0.1
 
-        return distance_reward + constant_reward
+        return distance_reward #+ constant_reward
 
 
     # What is type type of action?
@@ -112,9 +140,17 @@ class DroneEnv(Env):
         # Calculate net force and torque
         net_force = np.array([0.0, 0.0])
         net_torque = 0.0
+
+        # Get rotation angle in degrees (currently in radians)
+        #rotation_angle = math.degrees(self.state[4])
         rotation_angle = self.state[4]
 
-        for i, motor in enumerate(self.motors):
+        # Convert discrete value to list of binary values for each motor
+        action = [int(x) for x in list(bin(action)[2:].zfill(len(self.motors)))]
+        #action = [1, 0]
+
+
+        for i, motor in enumerate(self.motors):            
             # Calculate thrust
             thrust = action[i] * self.thrust
 
@@ -135,37 +171,38 @@ class DroneEnv(Env):
 
         # Update linear motion
         acceleration = net_force / self.mass
-        self.state[1] += acceleration[0] * self.dt  # Update velocity x
-        self.state[3] += acceleration[1] * self.dt  # Update velocity y
+        self.state[1] += acceleration[0] * self.dt * 0.01 # Update velocity x
+        self.state[3] += acceleration[1] * self.dt * 0.01 # Update velocity y
         
         # Update rotational motion
         angular_acceleration = net_torque / self.inertia
-        self.state[5] += angular_acceleration * self.dt  # Update angular velocity
+        self.state[5] += angular_acceleration * self.dt   # Update angular velocity
 
     def _apply_gravity(self):
         # Apply gravity
-        self.state[3] += self.gravity * 100 * self.dt
+        self.state[3] += self.gravity * 1 * self.dt
+        
     
-    def _ensure_drone_within_screen(self):
+    def _ensure_state_within_boundaries(self):
         done = False
-        # Ensure drone stays within the screen
-        if self.state[0] < 0:
-            self.state[0] = 0
-            self.state[1] = 0
-            done = True
-        elif self.state[0] > self.max_x:
-            self.state[0] = self.max_x
-            self.state[1] = 0
-            done = True
+        low, high = self.observation_space.low, self.observation_space.high
 
-        if self.state[2] < 0:
-            self.state[2] = 0
-            self.state[3] = 0
-            done = True
-        elif self.state[2] > self.max_y:
-            self.state[2] = self.max_y
-            self.state[3] = 0
-            done = True
+        # Iterate through each element in the state
+        for i in range(len(self.state)):
+            # Check for lower boundary
+            if self.state[i] < low[i]:
+                self.state[i] = low[i]
+                # Reset velocity to 0 if position is out of bounds
+                if i % 2 == 0:  # Assuming even indices are positions and odd indices are velocities
+                    self.state[i + 1] = 0
+                done = True
+            # Check for upper boundary
+            elif self.state[i] > high[i]:
+                self.state[i] = high[i]
+                # Reset velocity to 0 if position is out of bounds
+                if i % 2 == 0:  # Assuming even indices are positions and odd indices are velocities
+                    self.state[i + 1] = 0
+                done = True
 
         return done
     
@@ -177,3 +214,10 @@ class DroneEnv(Env):
         
         # Ensure the rotation stays within -pi to pi
         self.state[4] = math.atan2(math.sin(self.state[4]), math.cos(self.state[4]))
+
+    def close(self):
+        # Call super class
+        super().close()
+        # Close the display
+        if(self.render_mode == "human"):
+            self.display.close()

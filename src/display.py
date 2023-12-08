@@ -11,10 +11,16 @@ DRONE_SIZE = 40  # Size of the drone square
 MOTOR_SIZE = 10   # Size of the motor squares
 
 class Display:
-    def __init__(self, config: dict, update_frequency: int, title: str):
-        self.width = config["width"]
-        self.height = config["height"]
-        self.update_frequency = update_frequency
+    def __init__(self, config: dict, title: str):
+        self.width = config["display"]["width"]
+        self.height = config["display"]["height"]
+        self.update_frequency = config["display"]["update_frequency"]
+
+        self.target = {
+            "x": config["target"]["x"],
+            "y": config["target"]["y"],
+            "distance": config["target"]["distance"]
+        }
 
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(title)
@@ -23,7 +29,11 @@ class Display:
     def _draw_drone(self, drone):
         # Drone state
         state = drone.get_state()
-        drone_x, drone_y, _, _, rotation, _ = state
+        drone_x, _, drone_y, _, rotation, _ = state
+
+        # drone_x and drone_y are (-1,1) so we need to scale them to the screen size
+        drone_x = drone_x * self.width/2 + self.width/2
+        drone_y = drone_y * self.height/2 + self.height/2
         
         width = abs(min([motor[0] for motor in drone.motors]) - max([motor[0] for motor in drone.motors]))
         height = abs(min([motor[1] for motor in drone.motors]) - max([motor[1] for motor in drone.motors]))
@@ -65,7 +75,7 @@ class Display:
         x_offset = 20  # Starting x position for the first line of text
         line_height = 25  # Height of each line of text
 
-        state_labels = ["x", "y", "vx", "vy", "phi", "vphi"]
+        state_labels = ["x", "vx", "y", "vy", "theta", "omega"]
 
         for label, value in zip(state_labels, state):
             text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
@@ -103,16 +113,25 @@ class Display:
 
         
 
-    def _draw_target(self, target):
+    def _draw_target(self):
         # Draw a dot and a circle around the target with radius 50
-        pygame.draw.circle(self.screen, GREEN, (target["x"], target["y"]), target["distance"], 1)
-        pygame.draw.circle(self.screen, GREEN, (target["x"], target["y"]), 2)
+        # Scale the target position to the screen size
+        target = self.target
+        x = target["x"] * self.width/2 + self.width/2
+        y = target["y"] * self.height/2 + self.height/2
+        distance = target["distance"] * self.width/2
+        
+        pygame.draw.circle(self.screen, GREEN, (x, y), distance, 1)
+        pygame.draw.circle(self.screen, GREEN, (x, y), 2)
 
-    def update(self, drone, agent, target):
+    def update(self, drone):
         self.clock.tick(60)
         self.screen.fill(BLACK)
         self._draw_drone(drone)
-        self._draw_target(target)
-        self._draw_state(drone.get_normalized_state(target))
-        self._draw_agent_state(agent)
+        self._draw_target()
+        self._draw_state(drone.get_state())
+        # self._draw_agent_state(agent)
         pygame.display.flip()
+
+    def close(self):
+        pygame.quit()
