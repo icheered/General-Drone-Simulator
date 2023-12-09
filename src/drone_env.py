@@ -66,12 +66,18 @@ class DroneEnv(Env):
         self.episode_step = 0
 
         # Define ranges for randomization
-        position_range = 0.4
-        exclusion_zone = 0.1  # range around zero to exclude
+        # position_range = 0.3
+        # exclusion_zone = 0.1  # range around zero to exclude
+        # velocity_range = 0.1
+        # rotation_range = 0.4
+        # angular_velocity_range = 0.4
 
-        velocity_range = 0.1
-        rotation_range = 0.4
-        angular_velocity_range = 0.4
+        position_range = 0
+        exclusion_zone = 0  # range around zero to exclude
+
+        velocity_range = 0
+        rotation_range = 0
+        angular_velocity_range = 0
 
         def random_position(range_val, exclusion):
             # Choose a random sign (positive or negative)
@@ -122,8 +128,8 @@ class DroneEnv(Env):
         self.episode_step += 1
 
         # Apply motor inputs
-        self._apply_action(action)
-        self._apply_gravity()
+        #self._apply_action(action)
+        #self._apply_gravity()
         self._update_state_timestep()
 
         done = self._ensure_state_within_boundaries()

@@ -55,7 +55,7 @@ env = DummyVecEnv(env_fns)
 
 check_env(env.envs[0], warn=True)  # Checking only the first instance for compatibility
 
-stop_callback = StopTrainingOnRewardThreshold(reward_threshold=400, verbose=1)
+stop_callback = StopTrainingOnRewardThreshold(reward_threshold=800, verbose=1)
 eval_callback = EvalCallback(env, 
                              callback_on_new_best=stop_callback, 
                              eval_freq=1000, 
@@ -69,10 +69,10 @@ logger = LoggerCallback(monitor=monitor)
 callbacks = [eval_callback, logger]
 
 model = PPO('MlpPolicy', env, tensorboard_log=log_dir)
-model.learn(total_timesteps=500000, progress_bar=True, callback=callbacks)
+model.learn(total_timesteps=1000000, progress_bar=True, callback=callbacks)
 
 
-model.save(os.path.join('training', 'saved_models', 'PPO_model_0.5m'))
+model.save(os.path.join('training', 'saved_models', 'PPO_model_1m'))
 # env = DroneEnv(config)
 # check_env(env, warn=True)
 # env = DummyVecEnv([lambda: env])
