@@ -1,3 +1,7 @@
+#
+#   The display class is used to show a pygame screen and render the drone and target on it.
+#
+
 import pygame
 import math
 

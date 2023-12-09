@@ -1,3 +1,7 @@
+# 
+# The Monitor class shows graphs of the the reward and survive duration of each episode.
+# 
+
 import matplotlib.pyplot as plt
 
 class Monitor:
@@ -7,7 +11,6 @@ class Monitor:
         self.survive_durations = [0]
         self.average_survive_durations = [0]
 
-        plt.ion()  # Turn on interactive mode
         ppi = 109 # pixels per inch, specific to my monitor
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(config["display"]["width"]/ppi, config["display"]["height"]/ppi), dpi=ppi)
         plt.tight_layout()
@@ -68,3 +71,4 @@ class Monitor:
         self.fig.tight_layout()
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+        plt.pause(0.01)

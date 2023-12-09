@@ -3,26 +3,17 @@ display:
   height: 600
   update_frequency: 60
 
-agent:
-  gamma: 0.99           # Discount factor
-  epsilon: 0.75         # Exploration rate
-  epsilon_decay: 0.99999  # Exploration rate decay
-  max_memory: 100000    # Maximum number of experiences to store
-  batch_size: 100       # Number of experiences to sample per training step
-  learning_rate: 0.001  # Learning rate
-  layers: [64, 64]      # Number of neurons in the hidden layers
-  dropout_p: 0.3        # Dropout rate
-
 target:
   x: 0
   y: 0
   distance: 0.3
 
 drone:
-  thrust: 10            # Newtons
-  mass: 0.1             # Kilograms
-  inertia: 2            # Kilogram meters squared
-  gravity: 0.5
+  thrust: 30            # Newtons
+  mass: 0.2             # Kilograms
+  inertia: 1            # Kilogram meters squared
+  gravity: 1
   motors:
-    - [-0.5, 0, -90]    # X offset from drone center, Y offset from drone center, rotation relative to drone center
-    - [0.5, 0, -90]
+    - [0.5, 0, -90]    # X offset from drone center, Y offset from drone center, rotation relative to drone center
+    - [0, 0, -90]
+    - [-0.5, 0, -90]

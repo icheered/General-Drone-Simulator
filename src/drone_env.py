@@ -1,3 +1,8 @@
+#
+#   The DroneEnv class is used to create a drone environment that can be used with OpenAI Gym.
+#   It includes the drone state, kinematic equations, and reward function
+#
+
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 import numpy as np
@@ -66,18 +71,12 @@ class DroneEnv(Env):
         self.episode_step = 0
 
         # Define ranges for randomization
-        # position_range = 0.3
-        # exclusion_zone = 0.1  # range around zero to exclude
-        # velocity_range = 0.1
-        # rotation_range = 0.4
-        # angular_velocity_range = 0.4
+        position_range = 0.6
+        exclusion_zone = 0.3  # range around zero to exclude
 
-        position_range = 0
-        exclusion_zone = 0  # range around zero to exclude
-
-        velocity_range = 0
-        rotation_range = 0
-        angular_velocity_range = 0
+        velocity_range = 0.2
+        rotation_range = 0.6
+        angular_velocity_range = 0.6
 
         def random_position(range_val, exclusion):
             # Choose a random sign (positive or negative)
@@ -128,8 +127,8 @@ class DroneEnv(Env):
         self.episode_step += 1
 
         # Apply motor inputs
-        #self._apply_action(action)
-        #self._apply_gravity()
+        self._apply_action(action)
+        self._apply_gravity()
         self._update_state_timestep()
 
         done = self._ensure_state_within_boundaries()
@@ -151,14 +150,16 @@ class DroneEnv(Env):
     def _get_reward(self, done: bool):
         # Calculate reward
         if done:
-            return -10
+            return -100
         
         # Calculate Euclidean distance from the target
         distance = np.sqrt(self.state[0] ** 2 + self.state[2] ** 2)
 
-        distance_reward = max(1 - distance / self.target["distance"], -0.1)
+        distance_reward = 1 - distance / self.target["distance"]
 
-        return distance_reward
+        constant_reward = 0.1
+
+        return min(distance_reward + constant_reward, 1.1)
 
 
     # What is type type of action?

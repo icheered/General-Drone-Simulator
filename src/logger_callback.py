@@ -1,3 +1,8 @@
+#
+# The LoggerCallback class is used to log the reward and survive time of each episode and update the plot.
+# It is called automatically by the training loop on every step
+#
+
 from stable_baselines3.common.callbacks import BaseCallback
 from src.monitor import Monitor
 
