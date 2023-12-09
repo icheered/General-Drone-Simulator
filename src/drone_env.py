@@ -7,7 +7,7 @@ from src.display import Display
 import time
 
 class DroneEnv(Env):
-    def __init__(self, config: dict, render_mode = None):
+    def __init__(self, config: dict, render_mode = None, max_episode_steps = 1000):
         self.motors = config["drone"]["motors"]
         self.mass = config["drone"]["mass"]
         self.inertia = config["drone"]["inertia"]
@@ -40,8 +40,10 @@ class DroneEnv(Env):
         )
 
         # Reset to initialize the state 
+        self.max_episode_steps = max_episode_steps
+        self.episode_step = 0
         self.reset()
-
+        
         # Initialize the display
         self.render_mode = render_mode
         if(self.render_mode == "human"):
@@ -60,20 +62,32 @@ class DroneEnv(Env):
         return [seed]
 
     def reset(self, seed=None):
+        # Reset the survive duration
+        self.episode_step = 0
+
         # Define ranges for randomization
-        position_range = 0.1
+        position_range = 0.4
+        exclusion_zone = 0.1  # range around zero to exclude
+
         velocity_range = 0.1
-        rotation_range = 0.5
-        angular_velocity_range = 0.5
+        rotation_range = 0.4
+        angular_velocity_range = 0.4
+
+        def random_position(range_val, exclusion):
+            # Choose a random sign (positive or negative)
+            sign = 1 if random.random() < 0.5 else -1
+            # Generate a random value, excluding the specified range around zero
+            return random.uniform(exclusion, range_val) * sign
 
         self.state = [
-            random.uniform(-position_range, position_range),  # Position x
-            random.uniform(-position_range, position_range),  # Position y
+            random_position(position_range, exclusion_zone),  # Position x
+            random_position(position_range, exclusion_zone),  # Position y
             random.uniform(-velocity_range, velocity_range),  # Velocity x
             random.uniform(-velocity_range, velocity_range),  # Velocity y
             random.uniform(-rotation_range, rotation_range),  # Rotation
             random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
         ]
+
             
             # self.state = [
             #     0,  # Position x
@@ -104,6 +118,9 @@ class DroneEnv(Env):
 
     # What is type type of action?
     def step(self, action):
+        # Increment the survive duration
+        self.episode_step += 1
+
         # Apply motor inputs
         self._apply_action(action)
         self._apply_gravity()
@@ -111,8 +128,11 @@ class DroneEnv(Env):
 
         done = self._ensure_state_within_boundaries()
         reward = self._get_reward(done)
+        
+        if self.episode_step > self.max_episode_steps:
+            done = True
 
-        info = {}
+        info = {"episode_step": self.episode_step} if done else {}
 
         truncated = False
 
@@ -130,16 +150,9 @@ class DroneEnv(Env):
         # Calculate Euclidean distance from the target
         distance = np.sqrt(self.state[0] ** 2 + self.state[2] ** 2)
 
-        distance_reward = 1 - distance / self.target["distance"]
+        distance_reward = max(1 - distance / self.target["distance"], -0.1)
 
-        # if distance < 5:
-        #     # Avoid division by zero and getting infinite reward
-        #     distance_reward = 1
-        
-        # Add a constant reward for survival/progress
-        #constant_reward = 0.1
-
-        return distance_reward #+ constant_reward
+        return distance_reward
 
 
     # What is type type of action?

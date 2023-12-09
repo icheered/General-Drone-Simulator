@@ -19,7 +19,7 @@ class Monitor:
         self.ax1.set_ylabel('Reward')
         self.ax1.tick_params(axis='y')
         self.ax1.set_title('Real-time Reward Monitoring')
-        self.ax1.legend(loc='upper left')
+        self.ax1.legend(loc='best')
         self.ax1.grid(True)
 
         # Survive duration subplot
@@ -29,7 +29,7 @@ class Monitor:
         self.ax2.set_ylabel('Survive Duration')
         self.ax2.tick_params(axis='y')
         self.ax2.set_title('Real-time Survive Duration Monitoring')
-        self.ax2.legend(loc='upper right')
+        self.ax2.legend(loc='best')
         self.ax2.grid(True)
 
     def log_data(self, reward, survive_duration):
