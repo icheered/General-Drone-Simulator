@@ -10,6 +10,7 @@ from stable_baselines3.common.logger import configure
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopTrainingOnRewardThreshold
 
+
 from src.drone_env import DroneEnv
 from src.utils import read_config
 from src.monitor import Monitor
@@ -25,7 +26,9 @@ log_path = os.path.join('training', 'logs')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
 
+# CONTROL THE PROGRAM FLOW
 show_env = False
+import_last_best_model = True
 train_model = True
 evaluate_model = False
 
@@ -76,17 +79,33 @@ if train_model:
 
     # Create the model
     model = None
-    # Switch for model type
-    if model_type == "PPO":
-        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    elif model_type == "A2C":
-        model = A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    elif model_type == "DQN":
-        model = DQN("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    elif model_type == "HER":
-        model = HER("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    best_model_path = os.path.join('training', 'saved_models', 'best_model')
+
+   # Create or load the model based on import_last_best_model flag
+    if import_last_best_model:
+        print("Importing last best model!")
+        if model_type == "PPO":
+            model = PPO.load(best_model_path, env)
+        elif model_type == "A2C":
+            model = A2C.load(best_model_path, env)
+        elif model_type == "DQN":
+            model = DQN.load(best_model_path, env)
+        elif model_type == "HER":
+            model = HER.load(best_model_path, env)
+        else:
+            raise ValueError("Model type not specified")
+        print("Loaded model from {}".format(best_model_path))
     else:
-        raise ValueError("Model type not specified")
+        if model_type == "PPO":
+            model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+        elif model_type == "A2C":
+            model = A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+        elif model_type == "DQN":
+            model = DQN("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+        elif model_type == "HER":
+            model = HER("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+        else:
+            raise ValueError("Model type not specified")
 
     # Do the actual learning
     try:

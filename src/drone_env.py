@@ -71,12 +71,12 @@ class DroneEnv(Env):
         self.episode_step = 0
 
         # Define ranges for randomization
-        position_range = 0.6
-        exclusion_zone = 0.3  # range around zero to exclude
+        position_range = 0.7
+        exclusion_zone = 0.4  # range around zero to exclude
 
-        velocity_range = 0.2
-        rotation_range = 0.6
-        angular_velocity_range = 0.6
+        velocity_range = 0.4
+        rotation_range = 2
+        angular_velocity_range = 1
 
         def random_position(range_val, exclusion):
             # Choose a random sign (positive or negative)
@@ -137,6 +137,11 @@ class DroneEnv(Env):
         if self.episode_step > self.max_episode_steps:
             done = True
 
+        # Check if the drone has stabilized
+        if self._has_stabilized():
+            done = True
+            reward = (self.max_episode_steps - self.episode_step) * 1.1
+
         info = {"episode_step": self.episode_step} if done else {}
 
         truncated = False
@@ -146,6 +151,31 @@ class DroneEnv(Env):
 
         return obs, reward, done, truncated, info
 
+    def _has_stabilized(self):
+        # If the drone is stable, no need to run the rest of the simulation
+
+        # Check if x and y potision and velocities are below a threshold
+        position_threshold = 0.05
+        if abs(self.state[0]) > position_threshold or abs(self.state[2]) > position_threshold:
+            return False
+        
+        # Check if linear velocity is below a threshold
+        velocity_threshold = 0.05
+        if abs(self.state[1]) > velocity_threshold or abs(self.state[3]) > velocity_threshold:
+            return False
+        
+        # Check if rotation is within a threshold of 0
+        rotation_threshold = 0.1
+        if abs(self.state[4]) > rotation_threshold:
+            return False
+        
+        # Check if angular velocity is below a threshold
+        angular_velocity_threshold = 0.2
+        if abs(self.state[5]) > angular_velocity_threshold:
+            return False
+        
+        return True
+    
     
     def _get_reward(self, done: bool):
         # Calculate reward

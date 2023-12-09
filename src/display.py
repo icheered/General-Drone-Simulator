@@ -48,7 +48,8 @@ class Display:
         drone_surface = pygame.Surface((surface_width, surface_height), pygame.SRCALPHA)  # Use SRCALPHA for transparency
 
         # Draw the drone rectangle on the surface
-        drone_rect = pygame.Rect(surface_width/2 - DRONE_SIZE/2, surface_height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
+        #drone_rect = pygame.Rect(surface_width/2 - DRONE_SIZE/2, surface_height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
+        drone_rect = pygame.Rect(0, 0, surface_width, DRONE_SIZE/2)
         pygame.draw.rect(drone_surface, WHITE, drone_rect)
 
         # Draw the motors
@@ -79,7 +80,7 @@ class Display:
         x_offset = 20  # Starting x position for the first line of text
         line_height = 25  # Height of each line of text
 
-        state_labels = ["x", "vx", "y", "vy", "theta", "omega"]
+        state_labels = ["X", "vX", "Y", "vY", "angle", "vAngle"]
 
         for label, value in zip(state_labels, state):
             text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
@@ -116,7 +117,6 @@ class Display:
             y_offset += line_height
 
         
-
     def _draw_target(self):
         # Draw a dot and a circle around the target with radius 50
         # Scale the target position to the screen size

@@ -20,12 +20,24 @@ print("Using device: {}".format(device))
 
 # Read config and set up tensorboard logging
 config = read_config("config.yaml")
-
-#filename = "PPO_20231209-154908"
 filename = "best_model"
 
-env = DroneEnv(config, render_mode="human", max_episode_steps=500)
-env = DummyVecEnv([lambda: env])
-model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
-evaluate_policy(model, env, n_eval_episodes=5, render=True)
-env.close()
+env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
+try:
+    while True:
+        model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
+        obs, _ = env.reset()
+        done = False
+        score = 0 
+        
+        while not done:
+            env.render()
+            action, _ = model.predict(obs)
+            obs, reward, done, _, info = env.step(action) # Get new set of observations
+            score+=reward
+        print(f'Score: {round(score,2)}')
+except KeyboardInterrupt:
+    print("Shutting down...")
+finally:
+    env.close()
+    exit()
