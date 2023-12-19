@@ -12,7 +12,7 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0,255,0)
 DRONE_SIZE = 40  # Size of the drone square
-MOTOR_SIZE = 10   # Size of the motor squares
+MOTOR_SIZE = 20   # Size of the motor squares
 
 class Display:
     def __init__(self, config: dict, title: str):
@@ -38,29 +38,53 @@ class Display:
         # drone_x and drone_y are (-1,1) so we need to scale them to the screen size
         drone_x = drone_x * self.width/2 + self.width/2
         drone_y = drone_y * self.height/2 + self.height/2
+
+        drone_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)  # Use SRCALPHA for transparency
         
-        width = abs(min([motor[0] for motor in drone.motors]) - max([motor[0] for motor in drone.motors]))
-        height = abs(min([motor[1] for motor in drone.motors]) - max([motor[1] for motor in drone.motors]))
-
-        surface_width = max(width*100 + MOTOR_SIZE, DRONE_SIZE)
-        surface_height = max(height*100 + MOTOR_SIZE, DRONE_SIZE)
-
-        drone_surface = pygame.Surface((surface_width, surface_height), pygame.SRCALPHA)  # Use SRCALPHA for transparency
+        # Fill the surface with light gray pixels
+        # drone_surface.fill((10, 10, 10))
 
         # Draw the drone rectangle on the surface
-        #drone_rect = pygame.Rect(surface_width/2 - DRONE_SIZE/2, surface_height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
-        drone_rect = pygame.Rect(0, 0, surface_width, DRONE_SIZE/2)
+        drone_rect = pygame.Rect(self.width/2 - DRONE_SIZE/2, self.height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
         pygame.draw.rect(drone_surface, WHITE, drone_rect)
 
-        # Draw the motors
-        for motor in drone.motors:
-            motor_x, motor_y, _ = motor
+        action = [int(x) for x in list(bin(drone.last_action)[2:].zfill(len(drone.motors)))]
+        action.reverse() # For some reason the actions are reversed
 
-            motor_x_scaled = motor_x * 100 + surface_width/2
-            motor_y_scaled = motor_y * 100 + surface_height/2
+        for i, motor in enumerate(drone.motors):
+            motor_x, motor_y, _, _ = motor
+            # Draw a line from the motor center to the drone center
+            pygame.draw.line(drone_surface, WHITE, (motor_x * 100 + self.width/2, motor_y * 100 + self.height/2), (self.width/2, self.height/2), 10)
 
-            motor_rect = pygame.Rect(motor_x_scaled - MOTOR_SIZE/2, motor_y_scaled - MOTOR_SIZE/2, MOTOR_SIZE, MOTOR_SIZE)
-            pygame.draw.rect(drone_surface, RED, motor_rect)
+        for i, motor in enumerate(drone.motors):
+            # Calculate the position to blit the motor triangle
+            motor_x, motor_y, _, _ = motor
+
+            motor_x_scaled = motor_x * 100 + self.width/2 - MOTOR_SIZE/2
+            motor_y_scaled = motor_y * 100 + self.height/2 - MOTOR_SIZE
+
+            # Create a surface for the motor
+            motor_surface = pygame.Surface((MOTOR_SIZE, MOTOR_SIZE), pygame.SRCALPHA)  # Use SRCALPHA for transparency
+
+            # Create a triangle for the motor
+            color = GREEN if action[i] else RED
+            motor_triangle = pygame.draw.polygon(motor_surface, color, [(0, MOTOR_SIZE), (MOTOR_SIZE/2, 0), (MOTOR_SIZE, MOTOR_SIZE)])
+
+            # Create the number for the motor
+            font = pygame.font.SysFont(None, 20)
+            text_surface = font.render(str(i+1), False, (0, 0, 0)) 
+            
+            # Blit at the center
+            text_x = MOTOR_SIZE/2 - text_surface.get_width()/2
+            text_y = MOTOR_SIZE/2 - text_surface.get_height()/4
+
+            motor_surface.blit(text_surface, (text_x, text_y))
+
+            # Rotate the motor triangle
+            motor_triangle = pygame.transform.rotate(motor_surface, (-motor[2])) # 0 degrees is right, 90 degrees is down
+
+            # Blit the motor triangle onto the drone surface at the calculated position
+            drone_surface.blit(motor_triangle, (motor_x_scaled, motor_y_scaled + MOTOR_SIZE/2))
 
         # Rotate the combined drone and motors surface
         rotation = rotation * 180 / math.pi

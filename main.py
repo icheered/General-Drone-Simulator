@@ -28,7 +28,7 @@ logger = configure(log_path, ["stdout", "tensorboard"])
 
 # CONTROL THE PROGRAM FLOW
 show_env = False
-import_last_best_model = True
+import_last_best_model = False
 train_model = True
 evaluate_model = False
 

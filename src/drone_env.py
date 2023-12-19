@@ -16,7 +16,6 @@ class DroneEnv(Env):
         self.motors = config["drone"]["motors"]
         self.mass = config["drone"]["mass"]
         self.inertia = config["drone"]["inertia"]
-        self.thrust = config["drone"]["thrust"]
         self.gravity = config["drone"]["gravity"]
 
         self.update_frequency = config["display"]["update_frequency"]
@@ -39,8 +38,8 @@ class DroneEnv(Env):
         # theta is rotation and limited between -pi, pi
         # omega is angular velocity and limited between -10, 10
         self.observation_space = Box(
-            low=np.array([-1, -5, -1, -5, -np.pi, -10]),
-            high=np.array([1, 5, 1, 5, np.pi, 10]),
+            low=np.array([-1, -5, -1, -5, -np.pi, -20]),
+            high=np.array([1, 5, 1, 5, np.pi, 20]),
             dtype=np.float32
         )
 
@@ -48,6 +47,7 @@ class DroneEnv(Env):
         self.max_episode_steps = max_episode_steps
         self.episode_step = 0
         self.reset()
+        self.last_action = 0
         
         # Initialize the display
         self.render_mode = render_mode
@@ -94,14 +94,14 @@ class DroneEnv(Env):
         ]
 
             
-            # self.state = [
-            #     0,  # Position x
-            #     0,  # Position y
-            #     0,  # Velocity x
-            #     0,  # Velocity y
-            #     0,  # Rotation
-            #     0,  # Angular velocity
-            # ]
+        # self.state = [
+        #     0,  # Position x
+        #     0,  # Velocity x
+        #     0,  # Position y
+        #     0,  # Velocity y
+        #     0,  # Rotation
+        #     0,  # Angular velocity
+        # ]
 
         # Convert the state to a numpy array with dtype float32
         obs = np.array(self.state, dtype=np.float32)
@@ -123,6 +123,7 @@ class DroneEnv(Env):
 
     # What is type type of action?
     def step(self, action):
+        self.last_action = action
         # Increment the survive duration
         self.episode_step += 1
 
@@ -204,16 +205,15 @@ class DroneEnv(Env):
 
         # Convert discrete value to list of binary values for each motor
         action = [int(x) for x in list(bin(action)[2:].zfill(len(self.motors)))]
-        #action = [1, 0]
-
+        action.reverse()
 
         for i, motor in enumerate(self.motors):            
             # Calculate thrust
-            thrust = action[i] * self.thrust
+            thrust = action[i] * motor[3]
 
             # Force components in motor frame
-            force_x = thrust * math.cos(math.radians(motor[2]))
-            force_y = thrust * math.sin(math.radians(motor[2]))
+            force_x = thrust * math.cos(math.radians(motor[2]-90))
+            force_y = thrust * math.sin(math.radians(motor[2]-90))
 
             # Rotate the force vector by the drone's rotation angle
             rotated_force_x = force_x * math.cos(rotation_angle) - force_y * math.sin(rotation_angle)
@@ -223,7 +223,7 @@ class DroneEnv(Env):
             net_force += np.array([rotated_force_x, rotated_force_y])
 
             # Calculate the torque
-            torque = motor[0] * force_y  # Only y-component of force contributes to torque
+            torque = motor[0] * force_y - motor[1] * force_x    
             net_torque += torque
 
         # Update linear motion

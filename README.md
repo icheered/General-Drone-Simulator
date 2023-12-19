@@ -22,7 +22,7 @@ Reinforcement learning does not benefit from GPU acceleration as much as other m
 
 AMD (RocM)
 ```bash
-poetry source add --priority=explicit pytorch-gpu-src https://download.pytorch.org/whl/cu118
+poetry source add --priority=explicit pytorch-gpu-src https://download.pytorch.org/whl/rocm5.6
 poetry add --source pytorch-gpu-src torch
 ```
 
