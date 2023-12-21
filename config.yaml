@@ -14,6 +14,5 @@ drone:
   gravity: 1
   motors:
     - [-0.5, 0, 0, 30]
-    - [0, 0, 0, 30]
     - [0.5, 0, 0, 30]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
     

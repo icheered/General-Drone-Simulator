@@ -30,7 +30,7 @@ class DroneEnv(Env):
         # Action space is 2 motors, each either 0 or 1
         # DQN can only handle discrete action spaces
         # Every action (both motors off, both on, left on, right on) is a discrete value
-        self.action_space = Discrete(2 ** len(self.motors))
+        self.action_space = Box(np.zeros(len(self.motors)), np.ones(len(self.motors)))
 
         # State space is 6 values: x, vx, y, vy, theta, omega
         # x and y are limited between -1, 1
@@ -47,7 +47,7 @@ class DroneEnv(Env):
         self.max_episode_steps = max_episode_steps
         self.episode_step = 0
         self.reset()
-        self.last_action = 0
+        self.last_action = [0] * len(self.motors)
         
         # Initialize the display
         self.render_mode = render_mode
@@ -59,6 +59,9 @@ class DroneEnv(Env):
 
     def get_state(self):
         return self.state
+    
+    def get_action(self):
+        return self.last_action
     
     def seed(self, seed=None):
         # Set the seed
@@ -204,8 +207,8 @@ class DroneEnv(Env):
         rotation_angle = self.state[4]
 
         # Convert discrete value to list of binary values for each motor
-        action = [int(x) for x in list(bin(action)[2:].zfill(len(self.motors)))]
-        action.reverse()
+        # action = [int(x) for x in list(bin(action)[2:].zfill(len(self.motors)))]
+        # action.reverse()
 
         for i, motor in enumerate(self.motors):            
             # Calculate thrust
