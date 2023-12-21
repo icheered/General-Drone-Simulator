@@ -161,5 +161,11 @@ class Display:
         # self._draw_agent_state(agent)
         pygame.display.flip()
 
+        # Handle the event queue
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
     def close(self):
         pygame.quit()
