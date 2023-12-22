@@ -12,9 +12,14 @@ from src.display import Display
 import time
 
 class DroneEnv(Env):
-    def __init__(self, config: dict, render_mode = None, max_episode_steps = 1000):
+    def __init__(self, config: dict, render_mode = None, max_episode_steps = 1000, mass_rand=False):
         self.motors = config["drone"]["motors"]
-        self.mass = config["drone"]["mass"]
+        self.mass_rand = mass_rand
+        if self.mass_rand:
+            self.mass_range = config["drone"]["mass_range"]
+            self.mass = random.uniform(self.mass_range[0], self.mass_range[1])
+        else:
+            self.mass = config["drone"]["mass"]
         self.inertia = config["drone"]["inertia"]
         self.gravity = config["drone"]["gravity"]
 
@@ -80,6 +85,9 @@ class DroneEnv(Env):
         velocity_range = 0.4
         rotation_range = 2
         angular_velocity_range = 1
+
+        if self.mass_rand:
+            self.mass = random.uniform(self.mass_range[0], self.mass_range[1])
 
         def random_position(range_val, exclusion):
             # Choose a random sign (positive or negative)
