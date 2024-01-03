@@ -19,6 +19,9 @@ from src.logger_callback import LoggerCallback
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: {}".format(device))
 
+# device = torch.device("cpu")
+# print("Using device: {}".format(device))
+
 # Read config and set up tensorboard logging
 config = read_config("config.yaml")
 save_path = os.path.join('training', 'saved_models')
@@ -57,10 +60,23 @@ if train_model:
     max_episode_steps = 1000  # Max number of steps per episode
     total_timesteps = 10000000  # Total number of training steps (ie: environment steps)
     model_type = "PPO"
+    # env_fns = [lambda: DroneEnv(config, max_episode_steps=1000) for _ in range(num_envs)]
+    env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=1000) for _ in range(num_envs)]
 
-    env_fns = [lambda: DroneEnv(config, max_episode_steps=1000) for _ in range(num_envs)]
+
+    # env_fns = []
+    # for _ in range(num_envs):
+    #     def create_env():
+    #         return DroneEnv(config, max_episode_steps=1000)
+    #     env_fns.append(create_env)
+
+
     env = DummyVecEnv(env_fns)
     check_env(env.envs[0], warn=True)  # Check if the environment is valid
+
+    # Disable rendering for each environment
+    for env_instance in env.envs:
+        env_instance.enable_rendering = False  # Disable rendering
 
     stop_callback = StopTrainingOnRewardThreshold(reward_threshold=reward_threshold, verbose=1)
     eval_callback = EvalCallback(env, 

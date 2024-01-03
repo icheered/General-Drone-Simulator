@@ -12,7 +12,7 @@ from src.display import Display
 import time
 
 class DroneEnv(Env):
-    def __init__(self, config: dict, render_mode = None, max_episode_steps = 1000):
+    def __init__(self, config: dict, render_mode=None, max_episode_steps=1000):
         self.motors = config["drone"]["motors"]
         self.mass = config["drone"]["mass"]
         self.inertia = config["drone"]["inertia"]
@@ -21,11 +21,12 @@ class DroneEnv(Env):
         self.update_frequency = config["display"]["update_frequency"]
         self.dt = 1 / self.update_frequency
 
-        self.target = {
-            "x": config["target"]["x"],
-            "y": config["target"]["y"],
-            "distance": config["target"]["distance"]
-        }
+        # Initialize the state with default values
+        self.state = [0, 0, 0, 0, 0, 0]  # Default state values
+
+        # Initialize start and target positions
+        self.start_position = (config["start"]["x"], config["start"]["y"])
+        self.target_position = (config["target"]["x"], config["target"]["y"])
 
         # Action space is 2 motors, each either 0 or 1
         # DQN can only handle discrete action spaces
@@ -42,20 +43,20 @@ class DroneEnv(Env):
             high=np.array([1, 5, 1, 5, np.pi, 20]),
             dtype=np.float32
         )
+             # Flag to control rendering
+        self.enable_rendering = render_mode == "human"
+
+        # Initialize the display
+        self.render_mode = render_mode
+        self.display = None
+        if(self.render_mode == "human"):
+            self.display = Display(config=config, title="Drone Simulation")
 
         # Reset to initialize the state 
         self.max_episode_steps = max_episode_steps
         self.episode_step = 0
         self.reset()
-        self.last_action = 0
-        
-        # Initialize the display
-        self.render_mode = render_mode
-        if(self.render_mode == "human"):
-            self.display = Display(
-                config=config,
-                title="Drone Simulation"
-            )
+        self.last_action = 0            
 
     def get_state(self):
         return self.state
@@ -66,62 +67,64 @@ class DroneEnv(Env):
         # Return the seed
         return [seed]
 
+    def randomize_position(self, base_position, variation_range=0.2):
+        """
+        Randomize a position within a given range.
+
+        :param base_position: The base position (x or y coordinate).
+        :param variation_range: Maximum variation from the base position.
+        :return: Randomized position.
+        """
+        return base_position + np.random.uniform(-variation_range, variation_range)
+
     def reset(self, seed=None):
-        # Reset the survive duration
         self.episode_step = 0
 
-        # Define ranges for randomization
-        position_range = 0.7
-        exclusion_zone = 0.4  # range around zero to exclude
+        # Randomize start and target positions
+        def randomize_position(base_position, variation_range=0.8):
+            return base_position + np.random.uniform(-variation_range, variation_range)
 
-        velocity_range = 0.4
-        rotation_range = 2
-        angular_velocity_range = 1
+        start_x = randomize_position(self.start_position[0])
+        start_y = randomize_position(self.start_position[1])
+        target_x = randomize_position(self.target_position[0])
+        target_y = randomize_position(self.target_position[1]) # Comment to use function below
 
-        def random_position(range_val, exclusion):
-            # Choose a random sign (positive or negative)
-            sign = 1 if random.random() < 0.5 else -1
-            # Generate a random value, excluding the specified range around zero
-            return random.uniform(exclusion, range_val) * sign
+        # # Ensures that the target is always further away than the start haven't used it yet 
+        # # Waiting to test with negative thrust before and constinuous action space
+        # target_y = max(start_y, randomize_position(self.start_position[1]))
 
+        # Update display if initialized
+        if self.display is not None:
+            self.display.point_a["x"] = start_x
+            self.display.point_a["y"] = start_y
+            self.display.point_b["x"] = target_x
+            self.display.point_b["y"] = target_y
+
+        # Calculate and store the original distance from A to B
+        self.original_distance = np.linalg.norm(np.array(self.start_position) - np.array(self.target_position))
+
+        # Reset the state
         self.state = [
-            random_position(position_range, exclusion_zone),  # Position x
-            random_position(position_range, exclusion_zone),  # Position y
-            random.uniform(-velocity_range, velocity_range),  # Velocity x
-            random.uniform(-velocity_range, velocity_range),  # Velocity y
-            random.uniform(-rotation_range, rotation_range),  # Rotation
-            random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
+            start_x,  # Starting position x
+            0,        # Initial velocity x
+            start_y,  # Starting position y
+            0,        # Initial velocity y
+            0,        # Initial rotation angle
+            0         # Initial angular velocity
         ]
-
-            
-        # self.state = [
-        #     0,  # Position x
-        #     0,  # Velocity x
-        #     0,  # Position y
-        #     0,  # Velocity y
-        #     0,  # Rotation
-        #     0,  # Angular velocity
-        # ]
-
-        # Convert the state to a numpy array with dtype float32
+        
         obs = np.array(self.state, dtype=np.float32)
         info = {}
         return obs, info
 
-            
 
-    
-    def render(self):
-        mode = self.render_mode
-        assert mode in ["human", None], "Invalid mode, must be either \"human\" or None"
-        if mode == None:
+    def render(self, mode='human'):
+        if not self.enable_rendering:
             return
-        elif mode == "human":
+        if self.render_mode == "human":
             self.display.update(self)
-            #time.sleep(0.1)
+            # time.sleep(0.1)  
 
-
-    # What is type type of action?
     def step(self, action):
         self.last_action = action
         # Increment the survive duration
@@ -176,21 +179,20 @@ class DroneEnv(Env):
             return False
         
         return True
-    
-    
+      
     def _get_reward(self, done: bool):
-        # Calculate reward
-        if done:
-            return -100
-        
-        # Calculate Euclidean distance from the target
-        distance = np.sqrt(self.state[0] ** 2 + self.state[2] ** 2)
+        # New reward function focusing on reaching from point A to B
+        current_position = (self.state[0], self.state[2])  # Position coordinates
+        distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
 
-        distance_reward = 1 - distance / self.target["distance"]
+        distance_reward = max(0, 1 - distance_to_target / self.original_distance)
 
         constant_reward = 0.1
 
-        return min(distance_reward + constant_reward, 1.1)
+        reward =  min(distance_reward + constant_reward, 1.1)
+
+        # Penalize if done (crash or out of bounds)
+        return reward if not done else -100
 
 
     # What is type type of action?

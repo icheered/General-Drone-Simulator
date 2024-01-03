@@ -26,9 +26,40 @@ class Display:
             "distance": config["target"]["distance"]
         }
 
+
+        self.point_a = {
+            "x": config["start"]["x"],
+            "y": config["start"]["y"]
+        }
+        self.point_b = {
+            "x": config["target"]["x"],
+            "y": config["target"]["y"]
+        }
+
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
+
+
+    def _draw_point_a(self):
+        # Scale the position to the screen size
+        ax = self.point_a["x"] * self.width/2 + self.width/2
+        ay = self.point_a["y"] * self.height/2 + self.height/2
+        pygame.draw.circle(self.screen, GREEN, (ax, ay), 10)  # Green circle for point A
+
+    def _draw_point_b(self):
+        # Scale the position to the screen size
+        bx = self.point_b["x"] * self.width/2 + self.width/2
+        by = self.point_b["y"] * self.height/2 + self.height/2
+
+        # Ensure bx and by are within the screen bounds
+        bx = max(0, min(self.width, bx))
+        by = max(0, min(self.height, by))
+
+        # Drawing the red cross for point B
+        cross_size = 10  # Size of the cross arms
+        pygame.draw.line(self.screen, RED, (bx - cross_size, by - cross_size), (bx + cross_size, by + cross_size), 2)
+        pygame.draw.line(self.screen, RED, (bx + cross_size, by - cross_size), (bx - cross_size, by + cross_size), 2)
 
     def _draw_drone(self, drone):
         # Drone state
@@ -142,21 +173,23 @@ class Display:
 
         
     def _draw_target(self):
-        # Draw a dot and a circle around the target with radius 50
         # Scale the target position to the screen size
-        target = self.target
-        x = target["x"] * self.width/2 + self.width/2
-        y = target["y"] * self.height/2 + self.height/2
-        distance = target["distance"] * self.width/2
-        
-        pygame.draw.circle(self.screen, GREEN, (x, y), distance, 1)
-        pygame.draw.circle(self.screen, GREEN, (x, y), 2)
+        target_x = self.target["x"] * self.width/2 + self.width/2
+        target_y = self.target["y"] * self.height/2 + self.height/2
+
+        # Draw a distinct marker at the target's position
+        # pygame.draw.circle(self.screen, GREEN, (target_x, target_y), 10)  # Large circle for visibility
+
 
     def update(self, drone):
+        if not drone.enable_rendering:
+            return
         self.clock.tick(60)
         self.screen.fill(BLACK)
         self._draw_drone(drone)
         self._draw_target()
+        self._draw_point_a()
+        self._draw_point_b()
         self._draw_state(drone.get_state())
         # self._draw_agent_state(agent)
         pygame.display.flip()

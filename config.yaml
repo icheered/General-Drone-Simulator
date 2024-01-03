@@ -3,10 +3,10 @@ display:
   height: 600
   update_frequency: 60
 
-target:
-  x: 0
-  y: 0
-  distance: 0.3
+# target:
+#   x: 0
+#   y: 0
+#   distance: 0.3
 
 drone:
   mass: 0.2             # Kilograms
@@ -16,4 +16,12 @@ drone:
     - [-0.5, 0, 0, 30]
     - [0, 0, 0, 30]
     - [0.5, 0, 0, 30]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
-    
+# altered below
+start:
+  x: 0.0  # Starting x position
+  y: 0.0  # Starting y position
+
+target:
+  x: 0.5  # Target x position
+  y: 0.5  # Target y position
+  distance: 1.0  # Not used in the new setup but can be kept for compatibility
