@@ -185,12 +185,13 @@ class DroneEnv(Env):
         current_position = (self.state[0], self.state[2])  # Position coordinates
         distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
 
-        distance_reward = max(0, 1 - distance_to_target / self.original_distance)
+        # Implement an exponential reward function with positive rewards
+        # The reward increases as the drone gets closer to the target
+        max_reward = 1.0  # Define the maximum reward
+        reward = max_reward - np.exp(distance_to_target / self.original_distance)
 
-        constant_reward = 0.1
-
-        reward =  min(distance_reward + constant_reward, 1.1)
-
+        # Ensure that the reward does not become negative
+        reward = max(0, reward)
         # Penalize if done (crash or out of bounds)
         return reward if not done else -100
 
