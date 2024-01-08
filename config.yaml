@@ -22,6 +22,5 @@ start:
   y: 0.0  # Starting y position
 
 target:
-  x: 0.5  # Target x position
-  y: 0.5  # Target y position
-  distance: 1.0  # Not used in the new setup but can be kept for compatibility
+  x: 0  # Target x position
+  y: 0  # Target y position

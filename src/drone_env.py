@@ -21,12 +21,9 @@ class DroneEnv(Env):
         self.update_frequency = config["display"]["update_frequency"]
         self.dt = 1 / self.update_frequency
 
-        # Initialize the state with default values
-        self.state = [0, 0, 0, 0, 0, 0]  # Default state values
-
-        # Initialize start and target positions
-        self.start_position = (config["start"]["x"], config["start"]["y"])
-        self.target_position = (config["target"]["x"], config["target"]["y"])
+        # # Initialize start and target positions
+        # self.start_position = (config["start"]["x"], config["start"]["y"])
+        # self.target_position = (config["target"]["x"], config["target"]["y"])
 
         # Action space is 2 motors, each either 0 or 1
         # DQN can only handle discrete action spaces
@@ -39,24 +36,28 @@ class DroneEnv(Env):
         # theta is rotation and limited between -pi, pi
         # omega is angular velocity and limited between -10, 10
         self.observation_space = Box(
-            low=np.array([-1, -5, -1, -5, -np.pi, -20]),
-            high=np.array([1, 5, 1, 5, np.pi, 20]),
+            low=np.array([-2.1, -5, -2.1, -5, -np.pi, -20]),
+            high=np.array([2.1, 5, 2.1, 5, np.pi, 20]),
             dtype=np.float32
         )
              # Flag to control rendering
         self.enable_rendering = render_mode == "human"
 
-        # Initialize the display
-        self.render_mode = render_mode
-        self.display = None
-        if(self.render_mode == "human"):
-            self.display = Display(config=config, title="Drone Simulation")
+        
 
         # Reset to initialize the state 
         self.max_episode_steps = max_episode_steps
         self.episode_step = 0
         self.reset()
         self.last_action = 0            
+
+        # Initialize the display
+        # self.start_position = (0,0)
+        self.target_position = (0,0)
+        self.render_mode = render_mode
+        self.display = None
+        if(self.render_mode == "human"):
+            self.display = Display(config=config, title="Drone Simulation")
 
     def get_state(self):
         return self.state
@@ -67,7 +68,7 @@ class DroneEnv(Env):
         # Return the seed
         return [seed]
 
-    def randomize_position(self, base_position, variation_range=0.2):
+    def randomize_position(self, base_position, range=0.2):
         """
         Randomize a position within a given range.
 
@@ -75,57 +76,40 @@ class DroneEnv(Env):
         :param variation_range: Maximum variation from the base position.
         :return: Randomized position.
         """
-        return base_position + np.random.uniform(-variation_range, variation_range)
+        return base_position + np.random.uniform(-range, range)
 
     def reset(self, seed=None):
         self.episode_step = 0
 
-        # Randomize start and target positions
-        def randomize_position(base_position, variation_range=0.5):
-            return base_position + np.random.uniform(-variation_range, variation_range)
-        max_range = 0.5
-        start_x = randomize_position(self.start_position[0])
-        start_y = randomize_position(self.start_position[1])
-        target_x = randomize_position(self.target_position[0])
-        target_y = randomize_position(self.target_position[1]) # Comment to use function below
-
-        # # Ensures that the target is always further away than the start haven't used it yet 
-        # # Waiting to test with negative thrust before and constinuous action space
-        # target_y = max(start_y, randomize_position(self.start_position[1]))
-
-        # Update display if initialized
-        if self.display is not None:
-            self.display.point_a["x"] = start_x
-            self.display.point_a["y"] = start_y
-            self.display.point_b["x"] = target_x
-            self.display.point_b["y"] = target_y
-
-        # Calculate and store the original distance from A to B
-        self.original_distance = np.linalg.norm(np.array(self.start_position) - np.array(self.target_position))
-
+        self._update_target_position()
+        
         # Reset the state
         self.state = [
-            start_x,  # Starting position x
+            0,        # Starting position x
             0,        # Initial velocity x
-            start_y,  # Starting position y
+            0,        # Starting position y
             0,        # Initial velocity y
             0,        # Initial rotation angle
             0         # Initial angular velocity
         ]
+        # self.start_position = (self.randomize_position(0, range=0.5),self.randomize_position(0, range=0.5))
+        # self.state[0] = self.start_position[0]
+        # self.state[2] = self.start_position[1]
         
-        # # Reset the state (new design for altering the state with relative position to target)
-        # self.state = [
-        #     start_x - target_x,  # x position relative to target
-        #     0,                  # Initial velocity x
-        #     start_y - target_y,  # y position relative to target
-        #     0,                  # Initial velocity y
-        #     0,                  # Initial rotation angle
-        #     0                   # Initial angular velocity
-        # ]
+        self.start_position = (0,0)
+        #print(f"State position: {(self.state[0], self.state[2])}, Start position: {self.start_position}")
 
-        obs = np.array(self.state, dtype=np.float32)
+        obs = self._get_relative_state()
         info = {}
         return obs, info
+    
+    def _get_relative_state(self):
+        # Use deepcopy
+        current_state = self.state.copy()
+        current_state[0] -= self.target_position[0]
+        current_state[2] -= self.target_position[1]
+        return  np.array(current_state, dtype=np.float32)
+        
 
 
     def render(self, mode='human'):
@@ -133,7 +117,7 @@ class DroneEnv(Env):
             return
         if self.render_mode == "human":
             self.display.update(self)
-            # time.sleep(0.1)  
+            #time.sleep(0.1)  
 
     def step(self, action):
         self.last_action = action
@@ -144,6 +128,7 @@ class DroneEnv(Env):
         self._apply_action(action)
         self._apply_gravity()
         self._update_state_timestep()
+        #print(f"State: {self.state}")
 
         done = self._ensure_state_within_boundaries()
         
@@ -161,68 +146,33 @@ class DroneEnv(Env):
         truncated = False
 
         # Convert state to numpy array with dtype float32, if not already done
-        obs = np.array(self.state, dtype=np.float32)
+        obs = self._get_relative_state()
 
         return obs, reward, done, truncated, info
 
-    # def _has_stabilized(self):
-    #     # If the drone is stable, no need to run the rest of the simulation
-
-    #     # Check if x and y potision and velocities are below a threshold
-    #     position_threshold = 0.05
-    #     if abs(self.state[0]) > position_threshold or abs(self.state[2]) > position_threshold:
-    #         return False
-        
-    #     # Check if linear velocity is below a threshold
-    #     velocity_threshold = 0.05
-    #     if abs(self.state[1]) > velocity_threshold or abs(self.state[3]) > velocity_threshold:
-    #         return False
-        
-    #     # Check if rotation is within a threshold of 0
-    #     rotation_threshold = 0.1
-    #     if abs(self.state[4]) > rotation_threshold:
-    #         return False
-        
-    #     # Check if angular velocity is below a threshold
-    #     angular_velocity_threshold = 0.2
-    #     if abs(self.state[5]) > angular_velocity_threshold:
-    #         return False
-        
-    #     return True
-      
-    # def _get_reward(self, done: bool):
-    #     # New reward function focusing on reaching from point A to B
-    #     current_position = (self.state[0], self.state[2])  # Position coordinates
-    #     distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
-
-    #     # Implement an exponential reward function with positive rewards
-    #     # The reward increases as the drone gets closer to the target
-    #     max_reward = 1.0  # Define the maximum reward
-    #     reward = max_reward - np.exp(distance_to_target / self.original_distance)
-
-    #     # Ensure that the reward does not become negative
-    #     reward = max(0, reward)
-    #     # Penalize if done (crash or out of bounds)
-    #     return reward if not done else -100
-
+    def _reached_target_position(self):
+        current_position = (self.state[0], self.state[2])
+        distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
+        #print(f"Distance to target: {distance_to_target}")
+        return distance_to_target < 0.2
+    
+    def _update_target_position(self):
+        new_target_x = self.randomize_position(0, range=0.8)
+        new_target_y = self.randomize_position(0, range=0.8)
+        self.target_position = (new_target_x, new_target_y)
+    
     def _get_reward(self, done: bool):
+        if done:
+            return -100
+        if self._reached_target_position():
+            self._update_target_position()
+            return 100
+            
         current_position = (self.state[0], self.state[2])
         distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
         distance_reward = 1.0 / (distance_to_target + 1.0)
-        time_penalty = -0.1
-        if distance_to_target < 0.01:
-            target_achieved = 100  # Reward for reaching the target
-            # self.target_position = (new_target_x, new_target_y)
-            # # Logic to change target position
-            # self.target_position = (new_target_x, new_target_y)
-            # self.original_distance = np.linalg.norm(np.array([new_target_x, new_target_y]) - np.array(current_position))
-        else:
-            target_achieved = 0
 
-        reward = distance_reward + time_penalty + target_achieved
-        return reward if not done else -100
-
-
+        return distance_reward
 
     # What is type type of action?
     def _apply_action(self, action):
@@ -283,6 +233,7 @@ class DroneEnv(Env):
                 # Reset velocity to 0 if position is out of bounds
                 if i % 2 == 0:  # Assuming even indices are positions and odd indices are velocities
                     self.state[i + 1] = 0
+                print(f"State {i} is out of bounds (too low). Is currently: {self.state[i]}, should be min: {low[i]}")
                 done = True
             # Check for upper boundary
             elif self.state[i] > high[i]:
@@ -290,8 +241,18 @@ class DroneEnv(Env):
                 # Reset velocity to 0 if position is out of bounds
                 if i % 2 == 0:  # Assuming even indices are positions and odd indices are velocities
                     self.state[i + 1] = 0
+                print(f"State {i} is out of bounds (too high). Is currently: {self.state[i]}, should be min: {high[i]}")
                 done = True
-
+        
+        # Force it to die
+        if self.state[0] > 1:
+            done = True
+        if self.state[0] < -1:
+            done = True
+        if self.state[2] > 1:
+            done = True
+        if self.state[2] < -1:
+            done = True
         return done
     
     def _update_state_timestep(self):
