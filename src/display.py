@@ -155,8 +155,9 @@ class Display:
             y_offset += line_height
 
         
-    def _draw_target(self, drone):
-        # Scale the target position to the screen size
+    def _draw_targets(self, drone):
+        # TODO: UPDATE THIS FUNCTION TO HANDLE MULTIPLE TARGETS
+        # Scale the target positionj to the screen size
         target_x = drone.target_position[0] * self.width/2 + self.width/2
         target_y = drone.target_position[1] * self.height/2 + self.height/2
 
@@ -175,7 +176,7 @@ class Display:
         self.clock.tick(60)
         self.screen.fill(BLACK)
         self._draw_drone(drone)
-        self._draw_target(drone)
+        self._draw_targets(drone)
         self._draw_start_point(drone)
         self._draw_state(drone.get_state())
         # self._draw_agent_state(agent)

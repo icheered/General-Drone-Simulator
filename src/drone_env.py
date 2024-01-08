@@ -36,14 +36,12 @@ class DroneEnv(Env):
         # theta is rotation and limited between -pi, pi
         # omega is angular velocity and limited between -10, 10
         self.observation_space = Box(
-            low=np.array([-2.1, -5, -2.1, -5, -np.pi, -20]),
-            high=np.array([2.1, 5, 2.1, 5, np.pi, 20]),
+            low=np.array([-1, -5, -1, -5, -np.pi, -20]),
+            high=np.array([1, 5, 1, 5, np.pi, 20]),
             dtype=np.float32
         )
              # Flag to control rendering
         self.enable_rendering = render_mode == "human"
-
-        
 
         # Reset to initialize the state 
         self.max_episode_steps = max_episode_steps
@@ -53,12 +51,16 @@ class DroneEnv(Env):
 
         # Initialize the display
         # self.start_position = (0,0)
-        self.target_position = (0,0)
+        # self.target_position = (0,0)
         self.render_mode = render_mode
         self.display = None
         if(self.render_mode == "human"):
             self.display = Display(config=config, title="Drone Simulation")
 
+
+    def get_observation(self):
+        # Concatenate self.state and self.targets
+        return np.concatenate((self.state, self.targets), axis=None)
     def get_state(self):
         return self.state
     
@@ -81,16 +83,29 @@ class DroneEnv(Env):
     def reset(self, seed=None):
         self.episode_step = 0
 
-        self._update_target_position()
+        # TODO: IMPLEMENT THIS
+        for target in self.targets:
+            self._update_target_position(target)
         
         # Reset the state
+        # todo: Use a for-loop and specify the number of targets in the config.yaml
+        # (instead of manually specifying the x and y state space)
         self.state = [
             0,        # Starting position x
             0,        # Initial velocity x
             0,        # Starting position y
             0,        # Initial velocity y
             0,        # Initial rotation angle
-            0         # Initial angular velocity
+            0,         # Initial angular velocity
+        ]
+
+        self.targets = [
+            0,          # t1 x
+            0,          # t1 y
+            0,          # t2 x
+            0,          # t2 y
+            0,          # t3 x
+            0,          # t3 y
         ]
         # self.start_position = (self.randomize_position(0, range=0.5),self.randomize_position(0, range=0.5))
         # self.state[0] = self.start_position[0]
@@ -99,10 +114,12 @@ class DroneEnv(Env):
         self.start_position = (0,0)
         #print(f"State position: {(self.state[0], self.state[2])}, Start position: {self.start_position}")
 
-        obs = self._get_relative_state()
+        obs = self.get_observation()
         info = {}
         return obs, info
-    
+
+
+    # todo: remove this
     def _get_relative_state(self):
         # Use deepcopy
         current_state = self.state.copy()
@@ -110,7 +127,6 @@ class DroneEnv(Env):
         current_state[2] -= self.target_position[1]
         return  np.array(current_state, dtype=np.float32)
         
-
 
     def render(self, mode='human'):
         if not self.enable_rendering:
@@ -146,17 +162,20 @@ class DroneEnv(Env):
         truncated = False
 
         # Convert state to numpy array with dtype float32, if not already done
-        obs = self._get_relative_state()
+        obs = self.get_observation()
 
         return obs, reward, done, truncated, info
 
-    def _reached_target_position(self):
+    def _reached_target_position(self, target):
+        # UPDATE THIS TO WORK WITH TARGET PARAMETER INSTEAD OF SELF.TARGET_POSITION
         current_position = (self.state[0], self.state[2])
         distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
         #print(f"Distance to target: {distance_to_target}")
         return distance_to_target < 0.2
     
-    def _update_target_position(self):
+    # TODO: UPDATE THIS 
+    def _update_target_position(self, target):
+        # Use the target parameter instead of self.target_position
         new_target_x = self.randomize_position(0, range=0.8)
         new_target_y = self.randomize_position(0, range=0.8)
         self.target_position = (new_target_x, new_target_y)
@@ -164,12 +183,18 @@ class DroneEnv(Env):
     def _get_reward(self, done: bool):
         if done:
             return -100
-        if self._reached_target_position():
-            self._update_target_position()
-            return 100
+        
+        # TODO: FIX THIS
+        for target in self.targets: # Add a list of targets or use the self.state
+
+            if self._reached_target_position(target):
+                self._update_target_position(target)
+                return 100
             
         current_position = (self.state[0], self.state[2])
-        distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
+        #distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
+        # TODO: Think of a nice way to give it a short-term reward so it focusses targets, maybe distance to closest target?
+        # Maybe you can just leave this out
         distance_reward = 1.0 / (distance_to_target + 1.0)
 
         return distance_reward
@@ -243,16 +268,7 @@ class DroneEnv(Env):
                     self.state[i + 1] = 0
                 print(f"State {i} is out of bounds (too high). Is currently: {self.state[i]}, should be min: {high[i]}")
                 done = True
-        
-        # Force it to die
-        if self.state[0] > 1:
-            done = True
-        if self.state[0] < -1:
-            done = True
-        if self.state[2] > 1:
-            done = True
-        if self.state[2] < -1:
-            done = True
+
         return done
     
     def _update_state_timestep(self):
