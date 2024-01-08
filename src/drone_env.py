@@ -81,9 +81,9 @@ class DroneEnv(Env):
         self.episode_step = 0
 
         # Randomize start and target positions
-        def randomize_position(base_position, variation_range=0.8):
+        def randomize_position(base_position, variation_range=0.5):
             return base_position + np.random.uniform(-variation_range, variation_range)
-
+        max_range = 0.5
         start_x = randomize_position(self.start_position[0])
         start_y = randomize_position(self.start_position[1])
         target_x = randomize_position(self.target_position[0])
@@ -113,6 +113,16 @@ class DroneEnv(Env):
             0         # Initial angular velocity
         ]
         
+        # # Reset the state (new design for altering the state with relative position to target)
+        # self.state = [
+        #     start_x - target_x,  # x position relative to target
+        #     0,                  # Initial velocity x
+        #     start_y - target_y,  # y position relative to target
+        #     0,                  # Initial velocity y
+        #     0,                  # Initial rotation angle
+        #     0                   # Initial angular velocity
+        # ]
+
         obs = np.array(self.state, dtype=np.float32)
         info = {}
         return obs, info
@@ -136,15 +146,15 @@ class DroneEnv(Env):
         self._update_state_timestep()
 
         done = self._ensure_state_within_boundaries()
-        reward = self._get_reward(done)
         
         if self.episode_step > self.max_episode_steps:
             done = True
 
+        reward = self._get_reward(done)
         # Check if the drone has stabilized
-        if self._has_stabilized():
-            done = True
-            reward = (self.max_episode_steps - self.episode_step) * 1.1
+        # if self._has_stabilized():
+        #     done = True
+        #     reward = (self.max_episode_steps - self.episode_step) * 1.1
 
         info = {"episode_step": self.episode_step} if done else {}
 
@@ -155,45 +165,63 @@ class DroneEnv(Env):
 
         return obs, reward, done, truncated, info
 
-    def _has_stabilized(self):
-        # If the drone is stable, no need to run the rest of the simulation
+    # def _has_stabilized(self):
+    #     # If the drone is stable, no need to run the rest of the simulation
 
-        # Check if x and y potision and velocities are below a threshold
-        position_threshold = 0.05
-        if abs(self.state[0]) > position_threshold or abs(self.state[2]) > position_threshold:
-            return False
+    #     # Check if x and y potision and velocities are below a threshold
+    #     position_threshold = 0.05
+    #     if abs(self.state[0]) > position_threshold or abs(self.state[2]) > position_threshold:
+    #         return False
         
-        # Check if linear velocity is below a threshold
-        velocity_threshold = 0.05
-        if abs(self.state[1]) > velocity_threshold or abs(self.state[3]) > velocity_threshold:
-            return False
+    #     # Check if linear velocity is below a threshold
+    #     velocity_threshold = 0.05
+    #     if abs(self.state[1]) > velocity_threshold or abs(self.state[3]) > velocity_threshold:
+    #         return False
         
-        # Check if rotation is within a threshold of 0
-        rotation_threshold = 0.1
-        if abs(self.state[4]) > rotation_threshold:
-            return False
+    #     # Check if rotation is within a threshold of 0
+    #     rotation_threshold = 0.1
+    #     if abs(self.state[4]) > rotation_threshold:
+    #         return False
         
-        # Check if angular velocity is below a threshold
-        angular_velocity_threshold = 0.2
-        if abs(self.state[5]) > angular_velocity_threshold:
-            return False
+    #     # Check if angular velocity is below a threshold
+    #     angular_velocity_threshold = 0.2
+    #     if abs(self.state[5]) > angular_velocity_threshold:
+    #         return False
         
-        return True
+    #     return True
       
+    # def _get_reward(self, done: bool):
+    #     # New reward function focusing on reaching from point A to B
+    #     current_position = (self.state[0], self.state[2])  # Position coordinates
+    #     distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
+
+    #     # Implement an exponential reward function with positive rewards
+    #     # The reward increases as the drone gets closer to the target
+    #     max_reward = 1.0  # Define the maximum reward
+    #     reward = max_reward - np.exp(distance_to_target / self.original_distance)
+
+    #     # Ensure that the reward does not become negative
+    #     reward = max(0, reward)
+    #     # Penalize if done (crash or out of bounds)
+    #     return reward if not done else -100
+
     def _get_reward(self, done: bool):
-        # New reward function focusing on reaching from point A to B
-        current_position = (self.state[0], self.state[2])  # Position coordinates
+        current_position = (self.state[0], self.state[2])
         distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
+        distance_reward = 1.0 / (distance_to_target + 1.0)
+        time_penalty = -0.1
+        if distance_to_target < 0.01:
+            target_achieved = 100  # Reward for reaching the target
+            # self.target_position = (new_target_x, new_target_y)
+            # # Logic to change target position
+            # self.target_position = (new_target_x, new_target_y)
+            # self.original_distance = np.linalg.norm(np.array([new_target_x, new_target_y]) - np.array(current_position))
+        else:
+            target_achieved = 0
 
-        # Implement an exponential reward function with positive rewards
-        # The reward increases as the drone gets closer to the target
-        max_reward = 1.0  # Define the maximum reward
-        reward = max_reward - np.exp(distance_to_target / self.original_distance)
-
-        # Ensure that the reward does not become negative
-        reward = max(0, reward)
-        # Penalize if done (crash or out of bounds)
+        reward = distance_reward + time_penalty + target_achieved
         return reward if not done else -100
+
 
 
     # What is type type of action?
