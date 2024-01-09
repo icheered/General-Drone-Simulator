@@ -20,20 +20,19 @@ class Display:
         self.height = config["display"]["height"]
         self.update_frequency = config["display"]["update_frequency"]
 
-        self.target = {
-            "x": config["target"]["x"],
-            "y": config["target"]["y"],
-        }
+        self.screen = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption(title)
+        self.clock = pygame.time.Clock()
+
+        # self.target = {
+        #     "x": config["target"]["x"],
+        #     "y": config["target"]["y"],
+        # }
 
         self.start_point = {
             "x": config["start"]["x"],
             "y": config["start"]["y"]
         }
-
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption(title)
-        self.clock = pygame.time.Clock()
-
 
     def _draw_start_point(self, drone):
         # Scale the position to the screen size
@@ -156,18 +155,13 @@ class Display:
 
         
     def _draw_targets(self, drone):
-        # TODO: UPDATE THIS FUNCTION TO HANDLE MULTIPLE TARGETS
-        # Scale the target positionj to the screen size
-        target_x = drone.target_position[0] * self.width/2 + self.width/2
-        target_y = drone.target_position[1] * self.height/2 + self.height/2
+        for i in range(0, len(drone.targets), 2):
+            target_x = drone.targets[i] * self.width/2 + self.width/2
+            target_y = drone.targets[i+1] * self.height/2 + self.height/2
 
-        # Drawing the red cross for point B
-        cross_size = 10  # Size of the cross arms
-        pygame.draw.line(self.screen, RED, (target_x - cross_size, target_y - cross_size), (target_x + cross_size, target_y + cross_size), 2)
-        pygame.draw.line(self.screen, RED, (target_x + cross_size, target_y - cross_size), (target_x - cross_size, target_y + cross_size), 2)
-
-        # Draw a distinct marker at the target's position
-        # pygame.draw.circle(self.screen, GREEN, (target_x, target_y), 10)  # Large circle for visibility
+            cross_size = 10  # Size of the cross arms
+            pygame.draw.line(self.screen, RED, (target_x - cross_size, target_y - cross_size), (target_x + cross_size, target_y + cross_size), 2)
+            pygame.draw.line(self.screen, RED, (target_x + cross_size, target_y - cross_size), (target_x - cross_size, target_y + cross_size), 2)
 
 
     def update(self, drone):
