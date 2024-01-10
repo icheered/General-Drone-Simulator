@@ -38,10 +38,10 @@ class Display:
         # Scale the position to the screen size
         #print(f"Start from display: {drone.start_position}")
         startx = drone.start_position[0]
-        starty = drone.start_position[0]
+        starty = drone.start_position[1]
         ax = startx * self.width/2 + self.width/2
         ay = starty * self.height/2 + self.height/2
-        pygame.draw.circle(self.screen, GREEN, (ax, ay), 10)  # Green circle for point A
+        pygame.draw.circle(self.screen, GREEN, (ax, ay), 5)  # Green circle for point A
 
     def _draw_drone(self, drone):
         # Drone state
@@ -163,6 +163,19 @@ class Display:
             pygame.draw.line(self.screen, RED, (target_x - cross_size, target_y - cross_size), (target_x + cross_size, target_y + cross_size), 2)
             pygame.draw.line(self.screen, RED, (target_x + cross_size, target_y - cross_size), (target_x - cross_size, target_y + cross_size), 2)
 
+    def _draw_target_distances(self, observation):
+        targets = observation[6:]
+
+        font = pygame.font.SysFont(None, 24)
+        x_offset = 20
+        line_height = 25
+
+        y_offset = self.height - len(targets)/2 * line_height - 20
+
+        for i in range(0, len(targets), 2):
+            text = font.render(f"T {i//2}: {round(targets[i], 2)}, {round(targets[i+1], 2)}", True, WHITE)
+            self.screen.blit(text, (x_offset, y_offset))
+            y_offset += line_height
 
     def update(self, drone):
         if not drone.enable_rendering:
@@ -171,6 +184,7 @@ class Display:
         self.screen.fill(BLACK)
         self._draw_drone(drone)
         self._draw_targets(drone)
+        self._draw_target_distances(drone.get_observation())
         self._draw_start_point(drone)
         self._draw_state(drone.get_state())
         # self._draw_agent_state(agent)

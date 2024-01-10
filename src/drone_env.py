@@ -32,8 +32,8 @@ class DroneEnv(Env):
 
         # Observation space is the drone state (x, vx, y, vy, theta, vtheta) and the target positions
         self.observation_space = Box(
-            low=np.array([-1, -5, -1, -5, -np.pi, -40] + [-2] * self.num_targets),
-            high=np.array([1, 5, 1, 5, np.pi, 40] + [2] * self.num_targets),
+            low=np.array([-1, -5, -1, -5, -np.pi, -40] + [-2, -2] * self.num_targets),
+            high=np.array([1, 5, 1, 5, np.pi, 40] + [2,2] * self.num_targets),
             dtype=np.float32
         )
 
@@ -227,7 +227,6 @@ class DroneEnv(Env):
             if self.state[i] < low[i] or self.state[i] > high[i]:
                 # If the state is out of bounds, adjust it and flag the episode as done
                 self.state[i] = np.clip(self.state[i], low[i], high[i])
-                print(f"State {i} is out of bounds. Adjusted to: {self.state[i]}")
                 done = True
 
         return done
