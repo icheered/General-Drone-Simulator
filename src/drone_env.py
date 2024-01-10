@@ -24,38 +24,16 @@ class DroneEnv(Env):
 
         # Initialize number of targets
         self.num_targets = config["num_targets"]
-        self.targets = [0 for _ in range(self.num_targets * 2)]  # pre-defined number of targets, each with x and y
 
         # Action space is 2 motors, each either 0 or 1
         # DQN can only handle discrete action spaces
         # Every action (both motors off, both on, left on, right on) is a discrete value
         self.action_space = Discrete(2 ** len(self.motors))
 
-        self.state = [
-            0,        # Starting position x
-            0,        # Initial velocity x
-            0,        # Starting position y
-            0,        # Initial velocity y
-            0,        # Initial rotation angle
-            0,         # Initial angular velocity
-        ]
-
-        # Define bounds for each component of the state
-        # Example: position limits between -1 and 1, velocity limits, etc.
-        state_bounds_low = [-1, -5, -1, -5, -np.pi, -20]
-        state_bounds_high = [1, 5, 1, 5, np.pi, 20]
-
-        # Define bounds for each target's position
-        target_bounds_low = [-1] * len(self.targets)  # Assuming targets have similar bounds as position
-        target_bounds_high = [1] * len(self.targets)
-
-        # Combine bounds for state and targets
-        total_bounds_low = state_bounds_low + target_bounds_low
-        total_bounds_high = state_bounds_high + target_bounds_high
-
+        # Observation space is the drone state (x, vx, y, vy, theta, vtheta) and the target positions
         self.observation_space = Box(
-            low=np.array(total_bounds_low),
-            high=np.array(total_bounds_high),
+            low=np.array([-1, -5, -1, -5, -np.pi, -40] + [-2] * self.num_targets),
+            high=np.array([1, 5, 1, 5, np.pi, 40] + [2] * self.num_targets),
             dtype=np.float32
         )
 
@@ -75,8 +53,16 @@ class DroneEnv(Env):
         self.reset()
 
     def get_observation(self):
-        # Concatenate self.state and self.targets
-        return np.concatenate((self.state, self.targets), axis=None)
+        # Subtract the target position from the drone position
+        current_position = (self.state[0], self.state[2])
+        targets = self.targets.copy()
+        for i in range(0, len(targets), 2):
+            targets[i] -= current_position[0]
+            targets[i+1] -= current_position[1]
+        
+        # Concatenate self.state and targets
+        return np.concatenate((self.state, targets), axis=None)
+    
     def get_state(self):
         return self.state
     
@@ -85,72 +71,48 @@ class DroneEnv(Env):
         random.seed(seed)
         # Return the seed
         return [seed]
-
-    def randomize_position(self, base_position, range=0.2):
-        """
-        Randomize a position within a given range.
-
-        :param base_position: The base position (x or y coordinate).
-        :param variation_range: Maximum variation from the base position.
-        :return: Randomized position.
-        """
-        return base_position + np.random.uniform(-range, range)
     
-    def randomize_target_position(self, base_position, range=0.5):
-        return base_position + np.random.uniform(-range, range)
+    def random_position(self, range_val, exclusion = 0):
+        # Choose a random sign (positive or negative)
+        sign = 1 if random.random() < 0.5 else -1
+        # Generate a random value, excluding the specified range around zero
+        return random.uniform(exclusion, range_val) * sign
 
     def reset(self, seed=None):
         self.episode_step = 0
 
-        # TODO: IMPLEMENT THIS
-        for i in range(0, len(self.targets), 2):
-                self.targets[i], self.targets[i + 1] = self.randomize_target_position(0, range=0.5), self.randomize_target_position(0, range=0.5)
+        # Define ranges for randomization
+        position_range = 0.8
+        exclusion_zone = 0.4  # range around zero to exclude
+        velocity_range = 0.2
+        rotation_range = 1
+        angular_velocity_range = 1
 
-        # Reset the state
-        # todo: Use a for-loop and specify the number of targets in the config.yaml
-        # (instead of manually specifying the x and y state space)
+        # Randomize the initial state
         self.state = [
-            0,        # Starting position x
-            0,        # Initial velocity x
-            0,        # Starting position y
-            0,        # Initial velocity y
-            0,        # Initial rotation angle
-            0,         # Initial angular velocity
+            self.random_position(position_range, exclusion_zone),  # Position x
+            self.random_position(position_range, exclusion_zone),  # Position y
+            random.uniform(-velocity_range, velocity_range),  # Velocity x
+            random.uniform(-velocity_range, velocity_range),  # Velocity y
+            random.uniform(-rotation_range, rotation_range),  # Rotation
+            random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
         ]
 
-        self.targets = [0 for _ in range(self.num_targets * 2)]
-        # self.start_position = (self.randomize_position(0, range=0.5),self.randomize_position(0, range=0.5))
-        # self.state[0] = self.start_position[0]
-        # self.state[2] = self.start_position[1]
+        # Randomize the target position
+        self.targets = [self.random_position(position_range) for _ in range(self.num_targets * 2)]
         
-        self.start_position = (0,0)
+        self.start_position = (self.state[0], self.state[2])
         #print(f"State position: {(self.state[0], self.state[2])}, Start position: {self.start_position}")
 
-        # Randomize target positions
-        # self.targets = [self.randomize_position(0, range=0.5) for _ in range(6)]  # 3 targets, each with x and y
-        # Randomize positions for each target
-
-        
         # Update display if initialized
         if self.display is not None:
-            
             self.display.update(self)
 
         # Return the observation (state) as a numpy array
         obs = np.array(self.get_observation(), dtype=np.float32)
         info = {}
         return obs, info
-
-
-    # todo: remove this
-    def _get_relative_state(self):
-        # Use deepcopy
-        current_state = self.state.copy()
-        current_state[0] -= self.target_position[0]
-        current_state[2] -= self.target_position[1]
-        return  np.array(current_state, dtype=np.float32)
         
-
     def render(self, mode='human'):
         if not self.enable_rendering:
             return
@@ -191,13 +153,6 @@ class DroneEnv(Env):
         #print(f"Distance to target: {distance_to_target}")
         return distance_to_target < 0.2
     
-    # TODO: UPDATE THIS 
-    def _update_target_position(self, target):
-        # Use the target parameter instead of self.target_position
-        new_target_x = self.randomize_position(0, range=0.5)
-        new_target_y = self.randomize_position(0, range=0.5)
-        self.target_position = (new_target_x, new_target_y)
-    
     def _get_reward(self, done: bool):
         if done:
             return -1000
@@ -211,8 +166,9 @@ class DroneEnv(Env):
         for i in range(0, len(self.targets), 2):
             if np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) < 0.2:
                 reward += 100
+
                 # Logic to update this target's position
-                self.targets[i], self.targets[i+1] = self.randomize_position(0, range=0.5), self.randomize_position(0, range=0.5)
+                self.targets[i], self.targets[i+1] = self.random_position(0.8), self.random_position(0.8)
 
         return reward
 
@@ -275,31 +231,6 @@ class DroneEnv(Env):
                 done = True
 
         return done
-
-    # def _ensure_state_within_boundaries(self):
-    #     done = False
-    #     low, high = self.observation_space.low, self.observation_space.high
-
-    #     # Iterate through each element in the state
-    #     for i in range(len(self.state)):
-    #         # Check for lower boundary
-    #         if self.state[i] < low[i]:
-    #             self.state[i] = low[i]
-    #             # Reset velocity to 0 if position is out of bounds
-    #             if i % 2 == 0:  # Assuming even indices are positions and odd indices are velocities
-    #                 self.state[i + 1] = 0
-    #             print(f"State {i} is out of bounds (too low). Is currently: {self.state[i]}, should be min: {low[i]}")
-    #             done = True
-    #         # Check for upper boundary
-    #         elif self.state[i] > high[i]:
-    #             self.state[i] = high[i]
-    #             # Reset velocity to 0 if position is out of bounds
-    #             if i % 2 == 0:  # Assuming even indices are positions and odd indices are velocities
-    #                 self.state[i + 1] = 0
-    #             print(f"State {i} is out of bounds (too high). Is currently: {self.state[i]}, should be min: {high[i]}")
-    #             done = True
-
-    #     return done
     
     def _update_state_timestep(self):
         # Update state

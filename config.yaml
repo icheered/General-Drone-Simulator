@@ -5,7 +5,7 @@ display:
 
 drone:
   mass: 0.2             # Kilograms
-  inertia: 1            # Kilogram meters squared
+  inertia: 0.2            # Kilogram meters squared
   gravity: 1
   motors:
     - [-0.5, 0, 0, 30]
