@@ -8,10 +8,11 @@ drone:
   inertia: [0.1, 0.2, 0.3]  # Min, Default, Max 
   gravity: [0.9, 1, 1.1]    # Min, Default, Max 
   motors:
-    - [-0.5, 0, 0, 30]
-    - [0, 0, 0, 30]
-    - [0.5, 0, 0, 30]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
+    - [-0.5, 0, 0, 50]
+    - [0, 0, 0, 50]
+    - [0.5, 0, 0, 50]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
 
 environment:
   num_targets: 3 # Number of targets to spawn
   domain_randomization: True
+  domain_knowledge: True

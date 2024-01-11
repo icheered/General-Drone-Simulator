@@ -35,8 +35,8 @@ class Display:
 
     def _draw_drone(self, drone):
         # Drone state
-        state = drone.get_state()
-        drone_x, _, drone_y, _, rotation, _ = state
+        state = drone.get_true_state()
+        drone_x, _, drone_y, _, rotation, _ = state[:6]
 
         # drone_x and drone_y are (-1,1) so we need to scale them to the screen size
         drone_x = drone_x * self.width/2 + self.width/2
@@ -101,7 +101,7 @@ class Display:
 
     
     def _draw_state(self, drone):
-        state = drone.get_observation()
+        state = drone.get_true_state()
         font = pygame.font.SysFont(None, 24)
         y_offset = 0  # Starting y position for the first line of text
         x_offset = 20  # Starting x position for the first line of text

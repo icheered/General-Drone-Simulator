@@ -7,7 +7,7 @@ import os
 import datetime
 
 class Monitor:
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, name: str = "agent"):
         self.rewards = [0]
         self.average_rewards = [0]
         self.survive_durations = [0]
@@ -16,6 +16,9 @@ class Monitor:
         ppi = 109 # pixels per inch, specific to my monitor
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(config["display"]["width"]/ppi, config["display"]["height"]/ppi), dpi=ppi)
         plt.tight_layout()
+
+        # Set the title
+        self.fig.suptitle("Training: "+name)
 
         # Reward subplot
         self.reward_line, = self.ax1.plot(self.rewards, color="#99ff99", linestyle='-', label='Reward')

@@ -44,11 +44,19 @@ class DroneEnv(Env):
             [2,2] * self.environment["num_targets"]
         ]
 
-        self.observation_space = Box(
-            low=np.concatenate(observation_state_range[0] + observation_domain_range[0] + observation_target_range[0], axis=None),
-            high=np.concatenate(observation_state_range[1] + observation_domain_range[1] + observation_target_range[1], axis=None),
-            dtype=np.float32
-        )
+        # Only include the domain parameters if domain knowledge is enabled
+        if self.environment["domain_knowledge"]:
+            self.observation_space = Box(
+                low=np.concatenate(observation_state_range[0] + observation_domain_range[0] + observation_target_range[0], axis=None),
+                high=np.concatenate(observation_state_range[1] + observation_domain_range[1] + observation_target_range[1], axis=None),
+                dtype=np.float32
+            )
+        else: 
+            self.observation_space = Box(
+                low=np.concatenate(observation_state_range[0] + observation_target_range[0], axis=None),
+                high=np.concatenate(observation_state_range[1] + observation_target_range[1], axis=None),
+                dtype=np.float32
+            )
 
         # Flag to control rendering
         self.enable_rendering = render_mode == "human"
@@ -74,13 +82,25 @@ class DroneEnv(Env):
             targets[i] -= current_position[0]
             targets[i+1] -= current_position[1]
         
+        # Concatenate self.state, domain parameters, and targets
+        if self.environment["domain_knowledge"]:
+            domain_parameters = [self.mass, self.inertia, self.gravity]
+            return np.concatenate((self.state, domain_parameters, targets), axis=None)
+        else:
+            return np.concatenate((self.state, targets), axis=None)
+    
+    def get_true_state(self):
+        # Subtract the target position from the drone position
+        current_position = (self.state[0], self.state[2])
+        targets = self.targets.copy()
+        for i in range(0, len(targets), 2):
+            targets[i] -= current_position[0]
+            targets[i+1] -= current_position[1]
+        
         domain_parameters = [self.mass, self.inertia, self.gravity]
 
         # Concatenate self.state, domain parameters, and targets
         return np.concatenate((self.state, domain_parameters, targets), axis=None)
-    
-    def get_state(self):
-        return self.state
     
     def seed(self, seed=None):
         # Set the seed
