@@ -190,7 +190,10 @@ class DroneEnv(Env):
                 self.episodes_without_target = 0
         
         # Penalty for not reaching a target
-        reward -= min((self.episodes_without_target) * 0.01, 10)
+        # reward -= min((self.episodes_without_target) * 0.01, 5)
+
+        # Bound reward at -2000 to prevent explosion
+        reward = max(reward, -2000)
 
         self.last_reward = reward
 
