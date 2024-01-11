@@ -14,26 +14,39 @@ import time
 class DroneEnv(Env):
     def __init__(self, config: dict, render_mode=None, max_episode_steps=1000):
         self.motors = config["drone"]["motors"]
-        self.mass = config["drone"]["mass"]
-        self.inertia = config["drone"]["inertia"]
-        self.gravity = config["drone"]["gravity"]
-        self.num_targets = config["num_targets"]
+
+        self.mass_config = config["drone"]["mass"]
+        self.inertia_config = config["drone"]["inertia"]
+        self.gravity_config = config["drone"]["gravity"]
 
         self.update_frequency = config["display"]["update_frequency"]
         self.dt = 1 / self.update_frequency
 
-        # Initialize number of targets
-        self.num_targets = config["num_targets"]
+        # Number of targets and domain randomization toggle
+        self.environment = config["environment"]
 
-        # Action space is 2 motors, each either 0 or 1
-        # DQN can only handle discrete action spaces
-        # Every action (both motors off, both on, left on, right on) is a discrete value
+        # Every motor activation is between 0 and 1
         self.action_space = Box(np.zeros(len(self.motors)), np.ones(len(self.motors)))
-
+        
         # Observation space is the drone state (x, vx, y, vy, theta, vtheta) and the target positions
+        observation_state_range = [
+            [-1, -5, -1, -5, -np.pi, -40],
+            [1, 5, 1, 5, np.pi, 40]
+        ]
+
+        observation_domain_range = [
+            [self.mass_config[0], self.inertia_config[0], self.gravity_config[0]],
+            [self.mass_config[-1], self.inertia_config[-1], self.gravity_config[-1]]
+        ]
+
+        observation_target_range = [
+            [-2, -2] * self.environment["num_targets"],
+            [2,2] * self.environment["num_targets"]
+        ]
+
         self.observation_space = Box(
-            low=np.array([-1, -5, -1, -5, -np.pi, -40] + [-2, -2] * self.num_targets),
-            high=np.array([1, 5, 1, 5, np.pi, 40] + [2,2] * self.num_targets),
+            low=np.concatenate(observation_state_range[0] + observation_domain_range[0] + observation_target_range[0], axis=None),
+            high=np.concatenate(observation_state_range[1] + observation_domain_range[1] + observation_target_range[1], axis=None),
             dtype=np.float32
         )
 
@@ -49,7 +62,8 @@ class DroneEnv(Env):
         # Reset to initialize the state
         self.max_episode_steps = max_episode_steps
         self.episode_step = 0
-        self.last_action = 0
+        self.last_action = [0] * len(self.motors)
+        self.episodes_without_target = 0
         self.reset()
 
     def get_observation(self):
@@ -60,8 +74,10 @@ class DroneEnv(Env):
             targets[i] -= current_position[0]
             targets[i+1] -= current_position[1]
         
-        # Concatenate self.state and targets
-        return np.concatenate((self.state, targets), axis=None)
+        domain_parameters = [self.mass, self.inertia, self.gravity]
+
+        # Concatenate self.state, domain parameters, and targets
+        return np.concatenate((self.state, domain_parameters, targets), axis=None)
     
     def get_state(self):
         return self.state
@@ -81,6 +97,16 @@ class DroneEnv(Env):
     def reset(self, seed=None):
         self.episode_step = 0
 
+        # Set the domain parameters
+        if self.environment["domain_randomization"]:
+            self.mass = random.uniform(self.mass_config[0], self.mass_config[-1])
+            self.inertia = random.uniform(self.inertia_config[0], self.inertia_config[-1])
+            self.gravity = random.uniform(self.gravity_config[0], self.gravity_config[-1])
+        else:
+            self.mass = self.mass_config[1]
+            self.inertia = self.inertia_config[1]
+            self.gravity = self.gravity_config[1]
+        
         # Define ranges for randomization
         position_range = 0.8
         exclusion_zone = 0.4  # range around zero to exclude
@@ -99,15 +125,15 @@ class DroneEnv(Env):
         ]
 
         # Randomize the target position
-        self.targets = [self.random_position(position_range) for _ in range(self.num_targets * 2)]
-        
+        self.targets = [self.random_position(position_range) for _ in range(self.environment["num_targets"] * 2)]
         self.start_position = (self.state[0], self.state[2])
-        #print(f"State position: {(self.state[0], self.state[2])}, Start position: {self.start_position}")
+        self.episodes_without_target = 0
+        self.last_reward = 0
 
         # Update display if initialized
         if self.display is not None:
             self.display.update(self)
-
+        
         # Return the observation (state) as a numpy array
         obs = np.array(self.get_observation(), dtype=np.float32)
         info = {}
@@ -121,15 +147,15 @@ class DroneEnv(Env):
             #time.sleep(0.1)  
 
     def step(self, action):
-        self.last_action = action
         # Increment the survive duration
         self.episode_step += 1
+        self.last_action = action
+        self.episodes_without_target += 1
 
         # Apply motor inputs
         self._apply_action(action)
         self._apply_gravity()
         self._update_state_timestep()
-        #print(f"State: {self.state}")
 
         done = self._ensure_state_within_boundaries()
         
@@ -137,21 +163,13 @@ class DroneEnv(Env):
             done = True
 
         reward = self._get_reward(done)
-
         info = {"episode_step": self.episode_step} if done else {}
-
         truncated = False
+
         # Convert the observation to a numpy array
         obs = np.array(self.get_observation(), dtype=np.float32)
 
         return obs, reward, done, truncated, info
-
-    def _reached_target_position(self, target):
-        # UPDATE THIS TO WORK WITH TARGET PARAMETER INSTEAD OF SELF.TARGET_POSITION
-        current_position = (self.state[0], self.state[2])
-        distance_to_target = np.linalg.norm(np.array(current_position) - np.array(self.target_position))
-        #print(f"Distance to target: {distance_to_target}")
-        return distance_to_target < 0.2
     
     def _get_reward(self, done: bool):
         if done:
@@ -169,6 +187,12 @@ class DroneEnv(Env):
 
                 # Logic to update this target's position
                 self.targets[i], self.targets[i+1] = self.random_position(0.8), self.random_position(0.8)
+                self.episodes_without_target = 0
+        
+        # Penalty for not reaching a target
+        reward -= min((self.episodes_without_target) * 0.01, 10)
+
+        self.last_reward = reward
 
         return reward
 

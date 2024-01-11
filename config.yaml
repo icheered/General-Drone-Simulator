@@ -4,16 +4,14 @@ display:
   update_frequency: 60
 
 drone:
-  mass: 0.2             # Kilograms
-  inertia: 0.2            # Kilogram meters squared
-  gravity: 1
+  mass: [0.1, 0.2, 0.4]     # Min, Default, Max 
+  inertia: [0.1, 0.2, 0.7]  # Min, Default, Max 
+  gravity: [0.7, 1, 1.2]    # Min, Default, Max 
   motors:
     - [-0.5, 0, 0, 30]
     - [0, 0, 0, 30]
     - [0.5, 0, 0, 30]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
 
-start:
-  x: 0.0  # Starting x position
-  y: 0.0  # Starting y position
-
-num_targets: 3 # Number of targets to spawn
+environment:
+  num_targets: 3 # Number of targets to spawn
+  domain_randomization: True

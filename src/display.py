@@ -24,16 +24,6 @@ class Display:
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
 
-        # self.target = {
-        #     "x": config["target"]["x"],
-        #     "y": config["target"]["y"],
-        # }
-
-        self.start_point = {
-            "x": config["start"]["x"],
-            "y": config["start"]["y"]
-        }
-
     def _draw_start_point(self, drone):
         # Scale the position to the screen size
         #print(f"Start from display: {drone.start_position}")
@@ -61,8 +51,7 @@ class Display:
         drone_rect = pygame.Rect(self.width/2 - DRONE_SIZE/2, self.height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
         pygame.draw.rect(drone_surface, WHITE, drone_rect)
 
-        action = [int(x) for x in list(bin(drone.last_action)[2:].zfill(len(drone.motors)))]
-        action.reverse() # For some reason the actions are reversed
+        action = drone.last_action
 
         for i, motor in enumerate(drone.motors):
             motor_x, motor_y, _, _ = motor
@@ -111,18 +100,55 @@ class Display:
         self.screen.blit(rotated_drone_surface, (blit_x, blit_y))
 
     
-    def _draw_state(self, state):
+    def _draw_state(self, drone):
+        state = drone.get_observation()
         font = pygame.font.SysFont(None, 24)
-        y_offset = 20  # Starting y position for the first line of text
+        y_offset = 0  # Starting y position for the first line of text
         x_offset = 20  # Starting x position for the first line of text
         line_height = 25  # Height of each line of text
 
         state_labels = ["X", "vX", "Y", "vY", "angle", "vAngle"]
+        domain_labels = ["mass", "inertia", "gravity"]
 
+        # State
+        text = font.render("State:", True, WHITE)
+        self.screen.blit(text, (0, y_offset))
+        y_offset += line_height
+    
+        # Draw the state
         for label, value in zip(state_labels, state):
             text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
             self.screen.blit(text, (x_offset, y_offset))
             y_offset += line_height
+        
+        # Domain parameters
+        y_offset += line_height
+        text = font.render("Domain parameters:", True, WHITE)
+        self.screen.blit(text, (0, y_offset))
+        y_offset += line_height
+
+        for label, value in zip(domain_labels, state[6:-len(drone.motors)*2]):
+            text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
+            self.screen.blit(text, (x_offset, y_offset))
+            y_offset += line_height
+
+        # Targets
+        y_offset += line_height
+        text = font.render("Targets:", True, WHITE)
+        self.screen.blit(text, (0, y_offset))
+
+        # Draw the target distances, defined as x and y times the number of targets
+        # The targets come in pairs of 2, and they are the last 2*len(targets) elements of the state
+        y_offset += line_height
+        target_idx = len(state) - len(drone.targets)  # Starting index of targets in the state array
+        for i in range(0, len(drone.targets), 2):
+            x_target = state[target_idx + i]
+            y_target = state[target_idx + i + 1]
+            label = f"T{i//2 + 1}"
+            text = font.render(f"{label}: ({round(x_target, 2)}, {round(y_target, 2)})", True, WHITE)
+            self.screen.blit(text, (x_offset, y_offset))
+            y_offset += line_height
+        
 
     def _draw_agent_state(self, agent):
         font = pygame.font.SysFont(None, 24)
@@ -163,19 +189,24 @@ class Display:
             pygame.draw.line(self.screen, RED, (target_x - cross_size, target_y - cross_size), (target_x + cross_size, target_y + cross_size), 2)
             pygame.draw.line(self.screen, RED, (target_x + cross_size, target_y - cross_size), (target_x - cross_size, target_y + cross_size), 2)
 
-    def _draw_target_distances(self, observation):
-        targets = observation[6:]
-
+    def _draw_simulation_stats(self, drone):
+        # On the right hand side of the screen
+        # Draw the current frame, the frames without target, the last reward
         font = pygame.font.SysFont(None, 24)
+        y_offset = 20
         x_offset = 20
-        line_height = 25
 
-        y_offset = self.height - len(targets)/2 * line_height - 20
+        text = font.render(f"Frame: {drone.episode_step}", True, WHITE)
+        self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
+        y_offset += 25
 
-        for i in range(0, len(targets), 2):
-            text = font.render(f"T {i//2}: {round(targets[i], 2)}, {round(targets[i+1], 2)}", True, WHITE)
-            self.screen.blit(text, (x_offset, y_offset))
-            y_offset += line_height
+        text = font.render(f"Frames without target: {drone.episodes_without_target}", True, WHITE)
+        self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
+        y_offset += 25
+
+        text = font.render(f"Reward: {round(drone.last_reward, 2)}", True, WHITE)
+        self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
+        y_offset += 25
 
     def update(self, drone):
         if not drone.enable_rendering:
@@ -184,10 +215,10 @@ class Display:
         self.screen.fill(BLACK)
         self._draw_drone(drone)
         self._draw_targets(drone)
-        self._draw_target_distances(drone.get_observation())
+        
         self._draw_start_point(drone)
-        self._draw_state(drone.get_state())
-        # self._draw_agent_state(agent)
+        self._draw_state(drone)
+        self._draw_simulation_stats(drone)
         pygame.display.flip()
 
         # Handle the event queue

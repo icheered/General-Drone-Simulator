@@ -15,29 +15,35 @@ from src.monitor import Monitor
 from src.logger_callback import LoggerCallback
 from src.human import Human
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Using device: {}".format(device))
+def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device: {}".format(device))
 
-# Read config and set up tensorboard logging
-config = read_config("config.yaml")
-filename = "best_model"
+    # Read config and set up tensorboard logging
+    config = read_config("config.yaml")
+    filename = "best_model"
 
-env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
-try:
-    while True:
-        model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
-        obs, _ = env.reset()
-        done = False
-        score = 0 
-        
-        while not done:
-            env.render()
-            action, _ = model.predict(obs)
-            obs, reward, done, _, info = env.step(action) # Get new set of observations
-            score+=reward
-        print(f'Score: {round(score,2)}')
-except KeyboardInterrupt:
-    print("Shutting down...")
-finally:
-    env.close()
-    exit()
+    env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
+    try:
+        while True:
+            model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
+            obs, _ = env.reset()
+            done = False
+            score = 0 
+            
+            while not done:
+                env.render()
+                action, _ = model.predict(obs)
+                obs, reward, done, _, info = env.step(action) # Get new set of observations
+                score+=reward
+            print(f'Score: {round(score,2)}')
+    except KeyboardInterrupt:
+        print("Shutting down...")
+    except Exception as e:
+        print(e)
+    finally:
+        env.close()
+        exit()
+
+if __name__ == "__main__":
+    main()
