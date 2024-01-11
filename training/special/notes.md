@@ -29,3 +29,11 @@ environment:
   num_targets: 3 # Number of targets to spawn
   domain_randomization: True
 ```
+
+
+### PPO_20240111-163915
+Training time: 2:43
+Iterations: 17m
+Special notes: Same as above but without domain randomization
+
+![image](../figures/PPO_20240111-163915.png)
