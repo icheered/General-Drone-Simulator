@@ -55,19 +55,13 @@ for name, scenario in scenarios.items():
     # TRAIN THE MODEL
     num_envs = 16  # Number of parallel environments
     reward_threshold = 750  # Stop training if the average reward is greater or equal to this value
-    # TODO: STOP TRAINING ON AVERAGE REWARD THRESHOLD 
-
     max_episode_steps = 1000  # Max number of steps per episode
     total_timesteps = 10_000_000  # Total number of training steps (ie: environment steps)
     model_type = "PPO"
-    env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=1000) for _ in range(num_envs)]
+    env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=max_episode_steps) for _ in range(num_envs)]
 
     env = DummyVecEnv(env_fns)
     check_env(env.envs[0], warn=True)  # Check if the environment is valid
-
-    # # Disable rendering for each environment
-    # for env_instance in env.envs:
-    #     env_instance.enable_rendering = False  # Disable rendering
 
     eval_callback = EvalCallback(env, 
                                 eval_freq=1000,
