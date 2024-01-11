@@ -3,6 +3,8 @@
 # 
 
 import matplotlib.pyplot as plt
+import os
+import datetime
 
 class Monitor:
     def __init__(self, config: dict):
@@ -72,3 +74,7 @@ class Monitor:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
         plt.pause(0.01)
+
+    def close(self, savefilename):
+        # Save figure
+        plt.savefig(savefilename+".png")

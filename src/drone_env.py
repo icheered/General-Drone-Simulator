@@ -177,8 +177,9 @@ class DroneEnv(Env):
         
         # Reward based on distance to closest target
         current_position = (self.state[0], self.state[2])
-        closest_distance = min(np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) for i in range(0, len(self.targets), 2))
-        reward = 1.0 / (closest_distance + 1.0)
+        #closest_distance = min(np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) for i in range(0, len(self.targets), 2))
+        #reward = 1.0 / (closest_distance + 1.0)
+        reward = 0
 
         # Bonus for reaching a target
         for i in range(0, len(self.targets), 2):
@@ -190,10 +191,7 @@ class DroneEnv(Env):
                 self.episodes_without_target = 0
         
         # Penalty for not reaching a target
-        # reward -= min((self.episodes_without_target) * 0.01, 5)
-
-        # Bound reward at -2000 to prevent explosion
-        reward = max(reward, -2000)
+        reward -= min((self.episodes_without_target - 100) * 0.001, 3)
 
         self.last_reward = reward
 
@@ -267,5 +265,6 @@ class DroneEnv(Env):
         # Call super class
         super().close()
         # Close the display
-        if(self.render_mode == "human"):
+        if(self.enable_rendering):
+            print("Closing display")
             self.display.close()

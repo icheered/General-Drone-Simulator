@@ -25,6 +25,7 @@ print("Using device: {}".format(device))
 # Read config and set up tensorboard logging
 config = read_config("config.yaml")
 save_path = os.path.join('training', 'saved_models')
+figure_path = os.path.join('training', 'figures')
 log_path = os.path.join('training', 'logs')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
@@ -56,9 +57,9 @@ if show_env:
 if train_model:
     # TRAIN THE MODEL
     num_envs = 16  # Number of parallel environments
-    reward_threshold = 100000  # Stop training if the mean reward is greater or equal to this value
+    reward_threshold = 5000  # Stop training if the mean reward is greater or equal to this value
     max_episode_steps = 1000  # Max number of steps per episode
-    total_timesteps = 10000000  # Total number of training steps (ie: environment steps)
+    total_timesteps = 100000000  # Total number of training steps (ie: environment steps)
     model_type = "PPO"
     # env_fns = [lambda: DroneEnv(config, max_episode_steps=1000) for _ in range(num_envs)]
     env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=1000) for _ in range(num_envs)]
@@ -130,9 +131,10 @@ if train_model:
         print("Keyboard interrupt detected, exiting training loop")
     
     # SAVE THE MODEL TO DISK
-    savefilename = os.path.join(save_path, model_type + "_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    model.save(savefilename)
-    print("Model saved to {}".format(savefilename))
+    filename = model_type + "_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    model.save(os.path.join(save_path, filename))
+    monitor.close(os.path.join(figure_path, filename))
+    print("Model saved to {}".format(filename))
 
 
 if evaluate_model:
