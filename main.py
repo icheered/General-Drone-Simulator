@@ -35,7 +35,7 @@ evaluate_model = False
 
 if show_env:
     # SHOW THE ENVIRONMENT FOR DEBUGGING
-    env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
+    env = DroneEnv(config, render_mode="human", max_episode_steps=1000, domain_rand=True)
     episodes = 5
     for episode in range(1, episodes+1):
         state = env.reset() # Get initial set of observations
@@ -58,7 +58,7 @@ if train_model:
     total_timesteps = 10000000  # Total number of training steps (ie: environment steps)
     model_type = "PPO"
 
-    env_fns = [lambda: DroneEnv(config, max_episode_steps=1000) for _ in range(num_envs)]
+    env_fns = [lambda: DroneEnv(config, max_episode_steps=1000, domain_rand=True) for _ in range(num_envs)]
     env = DummyVecEnv(env_fns)
     check_env(env.envs[0], warn=True)  # Check if the environment is valid
 
@@ -121,8 +121,7 @@ if train_model:
 
 if evaluate_model:
     # EVALUATE THE MODEL
-    filename = "PPO_Beast_1m"
-
+    filename = "best_model"
     env = DroneEnv(config, render_mode="human", max_episode_steps=5000)
     model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
     evaluate_policy(model, env, n_eval_episodes=5, render=True)
