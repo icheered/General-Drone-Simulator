@@ -14,5 +14,5 @@ drone:
 
 environment:
   num_targets: 3 # Number of targets to spawn
-  domain_randomization: True
-  domain_knowledge: True
+  domain_randomization: False
+  domain_knowledge: False

@@ -52,17 +52,20 @@ for name, scenario in scenarios.items():
     config["environment"]["domain_randomization"] = scenario["domain_randomization"]
     config["environment"]["domain_knowledge"] = scenario["domain_knowledge"]
 
-    # TRAIN THE MODEL
-    num_envs = 16  # Number of parallel environments
-    reward_threshold = 750  # Stop training if the average reward is greater or equal to this value
+    # Set training parameters
+    reward_threshold = 1000  # Stop training if the average reward is greater or equal to this value
+    num_envs = 16  # Number of parallel environments from which the experience replay buffer is sampled
     max_episode_steps = 1000  # Max number of steps per episode
-    total_timesteps = 10_000_000  # Total number of training steps (ie: environment steps)
+    max_episodes = 1000
+    total_timesteps = num_envs * max_episode_steps * max_episodes
+
+    # Create the environments
     model_type = "PPO"
     env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=max_episode_steps) for _ in range(num_envs)]
-
     env = DummyVecEnv(env_fns)
     check_env(env.envs[0], warn=True)  # Check if the environment is valid
 
+    # Create the callbacks
     eval_callback = EvalCallback(env, 
                                 eval_freq=1000,
                                 best_model_save_path=save_path, 
@@ -84,10 +87,15 @@ for name, scenario in scenarios.items():
     except KeyboardInterrupt:
         print("Keyboard interrupt detected, exiting training loop")
 
-    # SAVE THE MODEL AND GRAPH TO DISK
+    # Save the model and graph to disk
     num_episodes = format_number(len(monitor.rewards))
     training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
     filename = f"{model_type}_{name}_{num_episodes}_{training_duration}"
     model.save(os.path.join(save_path, filename))
     monitor.close(os.path.join(figure_path, filename))
+
+    # Copy the 'best_model' to 'filename + _best'
+    best_model_path = os.path.join(save_path, "best_model.zip")
+    best_model_filename = f"{filename}_best"
+    os.rename(best_model_path, os.path.join(save_path, best_model_filename+".zip"))
     print(f"Model saved to {filename}")

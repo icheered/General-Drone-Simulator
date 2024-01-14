@@ -1,5 +1,6 @@
 import datetime
 import os
+import time
 
 import numpy as np
 import torch
@@ -10,11 +11,11 @@ from stable_baselines3.common.logger import configure
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopTrainingOnRewardThreshold
 
-
 from src.drone_env import DroneEnv
-from src.utils import read_config
+from src.utils import format_number, read_config
 from src.monitor import Monitor
 from src.logger_callback import LoggerCallback
+from src.reward_callback import StopTrainingOnMovingAverageReward
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: {}".format(device))
@@ -55,29 +56,18 @@ if show_env:
     env.close()
 
 if train_model:
-    # TRAIN THE MODEL
-    num_envs = 16  # Number of parallel environments
-    reward_threshold = 5000  # Stop training if the mean reward is greater or equal to this value
+    # Set training parameters
+    reward_threshold = 1000  # Stop training if the average reward is greater or equal to this value
+    num_envs = 16  # Number of parallel environments from which the experience replay buffer is sampled
     max_episode_steps = 1000  # Max number of steps per episode
-    total_timesteps = 100000000  # Total number of training steps (ie: environment steps)
+    max_episodes = 1000
+    total_timesteps = num_envs * max_episode_steps * max_episodes
+
+    # Create the environment
     model_type = "PPO"
-    # env_fns = [lambda: DroneEnv(config, max_episode_steps=1000) for _ in range(num_envs)]
     env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=1000) for _ in range(num_envs)]
-
-
-    # env_fns = []
-    # for _ in range(num_envs):
-    #     def create_env():
-    #         return DroneEnv(config, max_episode_steps=1000)
-    #     env_fns.append(create_env)
-
-
     env = DummyVecEnv(env_fns)
     check_env(env.envs[0], warn=True)  # Check if the environment is valid
-
-    # Disable rendering for each environment
-    for env_instance in env.envs:
-        env_instance.enable_rendering = False  # Disable rendering
 
     stop_callback = StopTrainingOnRewardThreshold(reward_threshold=reward_threshold, verbose=1)
     eval_callback = EvalCallback(env, 
@@ -87,10 +77,10 @@ if train_model:
                                 verbose=1)
 
     # Monitor handles the plotting of reward and survive time during training
-    monitor = Monitor(config)
-    monitor.log_data(1, 1)
-    monitor.update_plot()
-    logger = LoggerCallback(monitor=monitor)
+    monitor = Monitor(config, "PPO")
+    logger_callback = LoggerCallback(monitor=monitor)
+    reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
+    callbacks = [eval_callback, logger_callback, reward_callback]
 
     callbacks = [eval_callback, logger]
 
@@ -100,41 +90,29 @@ if train_model:
 
    # Create or load the model based on import_last_best_model flag
     if import_last_best_model:
-        print("Importing last best model!")
-        if model_type == "PPO":
-            model = PPO.load(best_model_path, env)
-        elif model_type == "A2C":
-            model = A2C.load(best_model_path, env)
-        elif model_type == "DQN":
-            model = DQN.load(best_model_path, env)
-        elif model_type == "HER":
-            model = HER.load(best_model_path, env)
-        else:
-            raise ValueError("Model type not specified")
-        print("Loaded model from {}".format(best_model_path))
+        model = PPO.load(best_model_path, env)
     else:
-        if model_type == "PPO":
-            model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-        elif model_type == "A2C":
-            model = A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-        elif model_type == "DQN":
-            model = DQN("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-        elif model_type == "HER":
-            model = HER("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-        else:
-            raise ValueError("Model type not specified")
+        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
 
     # Do the actual learning
+    start_time = time.time()
     try:
         model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
     except KeyboardInterrupt:
         print("Keyboard interrupt detected, exiting training loop")
     
-    # SAVE THE MODEL TO DISK
-    filename = model_type + "_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    # Save the model and graph to disk
+    num_episodes = format_number(len(monitor.rewards))
+    training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
+    filename = f"{model_type}_{num_episodes}_{training_duration}_{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
     model.save(os.path.join(save_path, filename))
     monitor.close(os.path.join(figure_path, filename))
-    print("Model saved to {}".format(filename))
+
+    # Copy the 'best_model' to 'filename + _best'
+    best_model_path = os.path.join(save_path, "best_model.zip")
+    best_model_filename = f"{filename}_best"
+    os.rename(best_model_path, os.path.join(save_path, best_model_filename+".zip"))
+    print(f"Model saved to {filename}")
 
 
 if evaluate_model:
