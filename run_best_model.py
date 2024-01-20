@@ -22,7 +22,9 @@ print("Using device: {}".format(device))
 config = read_config("config.yaml")
 filename = "best_model"
 
-env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
+mass_rand = True
+
+env = DroneEnv(config, render_mode="human", max_episode_steps=1000, mass_rand=mass_rand)
 try:
     while True:
         model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
@@ -36,6 +38,8 @@ try:
             obs, reward, done, _, info = env.step(action) # Get new set of observations
             score+=reward
         print(f'Score: {round(score,2)}')
+        if mass_rand:
+            print(f'Mass: {round(env.mass,3)}')
 except KeyboardInterrupt:
     print("Shutting down...")
 finally:

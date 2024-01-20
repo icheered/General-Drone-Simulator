@@ -48,9 +48,6 @@ class Display:
         drone_rect = pygame.Rect(self.width/2 - DRONE_SIZE/2, self.height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
         pygame.draw.rect(drone_surface, WHITE, drone_rect)
 
-        action = [int(x) for x in list(bin(drone.last_action)[2:].zfill(len(drone.motors)))]
-        action.reverse() # For some reason the actions are reversed
-
         for i, motor in enumerate(drone.motors):
             motor_x, motor_y, _, _ = motor
             # Draw a line from the motor center to the drone center
@@ -67,7 +64,8 @@ class Display:
             motor_surface = pygame.Surface((MOTOR_SIZE, MOTOR_SIZE), pygame.SRCALPHA)  # Use SRCALPHA for transparency
 
             # Create a triangle for the motor
-            color = GREEN if action[i] else RED
+
+            color = RED
             motor_triangle = pygame.draw.polygon(motor_surface, color, [(0, MOTOR_SIZE), (MOTOR_SIZE/2, 0), (MOTOR_SIZE, MOTOR_SIZE)])
 
             # Create the number for the motor
@@ -98,15 +96,22 @@ class Display:
         self.screen.blit(rotated_drone_surface, (blit_x, blit_y))
 
     
-    def _draw_state(self, state):
+    def _draw_state(self, state, action):
         font = pygame.font.SysFont(None, 24)
         y_offset = 20  # Starting y position for the first line of text
         x_offset = 20  # Starting x position for the first line of text
         line_height = 25  # Height of each line of text
 
         state_labels = ["X", "vX", "Y", "vY", "angle", "vAngle"]
+        # action_labels = ["motor 1", "motor 2", "motor 3"]
+        action_labels = ["motor {}".format(i+1) for i in range(len(action))]
 
         for label, value in zip(state_labels, state):
+            text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
+            self.screen.blit(text, (x_offset, y_offset))
+            y_offset += line_height
+
+        for label, value in zip(action_labels, action):
             text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
             self.screen.blit(text, (x_offset, y_offset))
             y_offset += line_height
@@ -157,15 +162,9 @@ class Display:
         self.screen.fill(BLACK)
         self._draw_drone(drone)
         self._draw_target()
-        self._draw_state(drone.get_state())
+        self._draw_state(drone.get_state(), drone.get_action())
         # self._draw_agent_state(agent)
         pygame.display.flip()
-
-        # Handle the event queue
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
 
     def close(self):
         pygame.quit()

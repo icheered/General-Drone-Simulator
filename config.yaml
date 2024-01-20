@@ -9,11 +9,10 @@ target:
   distance: 0.3
 
 drone:
-  mass: 0.2             # Kilograms
-  inertia: 1            # Kilogram meters squared
-  gravity: 1
+  mass_range: [0.1, 0.4, 0.6] # Kilograms
+  inertia_range: [0.5, 1, 1.5] # Kilogram meters squared
+  gravity_range: [0.5, 1, 1.5] # gravitational constant
   motors:
-    - [-0.5, 0, 0, 30]
-    - [0, 0, 0, 30]
-    - [0.5, 0, 0, 30]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
+    - [-0.5, 0, 0, 50]
+    - [0.5, 0, 0, 50]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
     

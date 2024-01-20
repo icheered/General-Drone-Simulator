@@ -12,11 +12,20 @@ from src.display import Display
 import time
 
 class DroneEnv(Env):
-    def __init__(self, config: dict, render_mode = None, max_episode_steps = 1000):
+    def __init__(self, config: dict, render_mode = None, max_episode_steps = 1000, domain_rand=False):
         self.motors = config["drone"]["motors"]
-        self.mass = config["drone"]["mass"]
-        self.inertia = config["drone"]["inertia"]
-        self.gravity = config["drone"]["gravity"]
+        self.domain_rand = domain_rand
+        self.mass_range = config["drone"]["mass_range"]
+        self.inertia_range = config["drone"]["inertia_range"]
+        self.gravity_range = config["drone"]["gravity_range"]
+        if self.domain_rand:
+            self.mass = random.uniform(self.mass_range[0], self.mass_range[2])
+            self.inertia = random.uniform(self.inertia_range[0], self.inertia_range[2])
+            self.gravity = random.uniform(self.gravity_range[0], self.gravity_range[2])
+        else:
+            self.mass = self.mass_range[1]
+            self.inertia = self.inertia_range[1]
+            self.gravity = self.gravity_range[1]
 
         self.update_frequency = config["display"]["update_frequency"]
         self.dt = 1 / self.update_frequency
@@ -30,7 +39,7 @@ class DroneEnv(Env):
         # Action space is 2 motors, each either 0 or 1
         # DQN can only handle discrete action spaces
         # Every action (both motors off, both on, left on, right on) is a discrete value
-        self.action_space = Discrete(2 ** len(self.motors))
+        self.action_space = Box(np.zeros(len(self.motors)), np.ones(len(self.motors)))
 
         # State space is 6 values: x, vx, y, vy, theta, omega
         # x and y are limited between -1, 1
@@ -47,7 +56,7 @@ class DroneEnv(Env):
         self.max_episode_steps = max_episode_steps
         self.episode_step = 0
         self.reset()
-        self.last_action = 0
+        self.last_action = [0] * len(self.motors)
         
         # Initialize the display
         self.render_mode = render_mode
@@ -59,6 +68,12 @@ class DroneEnv(Env):
 
     def get_state(self):
         return self.state
+    
+    def get_params(self):
+        return [self.mass, self.inertia, self.gravity]
+    
+    def get_action(self):
+        return self.last_action
     
     def seed(self, seed=None):
         # Set the seed
@@ -77,6 +92,11 @@ class DroneEnv(Env):
         velocity_range = 0.4
         rotation_range = 2
         angular_velocity_range = 1
+
+        if self.domain_rand:
+            self.mass = random.uniform(self.mass_range[0], self.mass_range[2])
+            self.inertia = random.uniform(self.inertia_range[0], self.inertia_range[2])
+            self.gravity = random.uniform(self.gravity_range[0], self.gravity_range[2])
 
         def random_position(range_val, exclusion):
             # Choose a random sign (positive or negative)
@@ -204,8 +224,8 @@ class DroneEnv(Env):
         rotation_angle = self.state[4]
 
         # Convert discrete value to list of binary values for each motor
-        action = [int(x) for x in list(bin(action)[2:].zfill(len(self.motors)))]
-        action.reverse()
+        # action = [int(x) for x in list(bin(action)[2:].zfill(len(self.motors)))]
+        # action.reverse()
 
         for i, motor in enumerate(self.motors):            
             # Calculate thrust
