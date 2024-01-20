@@ -2393,6 +2393,20 @@ files = [
 ]
 
 [[package]]
+name = "snakeviz"
+version = "2.2.0"
+description = "A web-based viewer for Python profiler output"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "snakeviz-2.2.0-py2.py3-none-any.whl", hash = "sha256:569e2d71c47f80a886aa6e70d6405cb6d30aa3520969ad956b06f824c5f02b8e"},
+    {file = "snakeviz-2.2.0.tar.gz", hash = "sha256:7bfd00be7ae147eb4a170a471578e1cd3f41f803238958b6b8efcf2c698a6aa9"},
+]
+
+[package.dependencies]
+tornado = ">=2.0"
+
+[[package]]
 name = "stable-baselines3"
 version = "2.2.1"
 description = "Pytorch version of Stable Baselines, implementations of reinforcement learning algorithms."
@@ -2719,4 +2733,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ec85ce895884bf8a5dc443c027d4da5fbe6a2bd25fb4fd23f6e9438ef3d365b3"
+content-hash = "dba61933738550a224c2d80cb9a3fe2164594aaf114a7faa9b8d64b24d32e325"

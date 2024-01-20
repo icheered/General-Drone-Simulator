@@ -36,13 +36,13 @@ class ParameterEstimator(nn.Module):
 
     def custom_loss(self, y_pred, y_true):
         squared_error = torch.pow(abs(y_true - y_pred), 2)
-        mean_weighted_error = torch.mean(squared_error) * torch.max(squared_error)
+        mean_weighted_error = torch.mean(squared_error)
         return mean_weighted_error
     
     def RMSE(self, y_pred, y_true):
         # Calculate the squared error
         squared_error = torch.pow(y_true - y_pred, 2)
-        return torch.sqrt(torch.mean(squared_error)).item()
+        return torch.sqrt(torch.mean(squared_error))
 
     
     def pre_process(self, traj, labels, window, noise_level=0):

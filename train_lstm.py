@@ -8,27 +8,25 @@ from src.drone_env import DroneEnv
 from src.utils import read_config
 import numpy as np
 from tqdm import tqdm
-
 from src.lstm import ParameterEstimator 
+
 
 # Read config and set up tensorboard logging
 config = read_config("config.yaml")
 agent_filename = "best_model"
 
 # Create drone environment with randomization
-training_window = 20 # Number of frames per episode to train the LSTM on
+training_window = 10 # Number of frames per episode to train the LSTM on
 env = DroneEnv(config, render_mode=None, max_episode_steps=training_window)
 number_training_windows = 250
-number_test_windows = 20
 
 agent = PPO.load(os.path.join('training', 'saved_models', agent_filename), env=env, verbose=0)
-epochs = 1000
+epochs = 10
 
 # Create the LSTM model to be trained
 hidden_neurons = 250
 number_domain_parameters = 3 # Mass, Inertia, Gravity
 input_neurons=len(env.get_observation(state=True, domain_params=False, targets=False)) + len(env.motors)
-print(f"Input neurons: {input_neurons}")
 model = ParameterEstimator(
     sequence_length=training_window, 
     hidden_dim=hidden_neurons, 
@@ -41,6 +39,9 @@ optimizer = optim.Adam(model.parameters())
 model.train() # Set the module in training mode
 
 best_test_rmse = -1
+
+losses = []
+
 
 # Train the model
 for epoch in tqdm(range((epochs))):
@@ -82,7 +83,7 @@ for epoch in tqdm(range((epochs))):
         # Train the model
         model.train()
         y_pred = model.forward(x_batch)
-        loss = model.custom_loss(y_pred, y_batch)
+        loss = model.RMSE(y_pred, y_batch)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
