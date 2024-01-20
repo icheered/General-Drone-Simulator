@@ -27,7 +27,7 @@ def main():
     try:
         while True:
             #model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
-            model = PPO.load(os.path.join('results', 'saved_models', filename), env=env)
+            model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
             obs, _ = env.reset()
             done = False
             score = 0 

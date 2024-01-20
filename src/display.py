@@ -35,7 +35,7 @@ class Display:
 
     def _draw_drone(self, drone):
         # Drone state
-        state = drone.get_true_state()
+        state = drone.get_observation(state=True, domain_params=False, targets=False)
         drone_x, _, drone_y, _, rotation, _ = state[:6]
 
         # drone_x and drone_y are (-1,1) so we need to scale them to the screen size
@@ -101,7 +101,7 @@ class Display:
 
     
     def _draw_state(self, drone):
-        state = drone.get_true_state()
+        state = drone.get_observation(state=True, domain_params=False, targets=False)
         font = pygame.font.SysFont(None, 24)
         y_offset = 0  # Starting y position for the first line of text
         x_offset = 20  # Starting x position for the first line of text
@@ -126,8 +126,9 @@ class Display:
         text = font.render("Domain parameters:", True, WHITE)
         self.screen.blit(text, (0, y_offset))
         y_offset += line_height
+        domain_parameters = drone.get_observation(state=False, domain_params=True, targets=False)
 
-        for label, value in zip(domain_labels, state[6:-len(drone.motors)*2]):
+        for label, value in zip(domain_labels, domain_parameters):
             text = font.render(f"{label}: {round(value, 2)}", True, WHITE)
             self.screen.blit(text, (x_offset, y_offset))
             y_offset += line_height
