@@ -103,7 +103,7 @@ if train_model:
     
     # Save the model and graph to disk
     num_episodes = format_number(len(monitor.rewards))
-    training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
+    training_duration = time.strftime('%H-%M-%S', time.gmtime(time.time() - start_time))
     filename = f"{model_type}_{num_episodes}_{training_duration}_{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
     model.save(os.path.join(save_path, filename))
     monitor.close(os.path.join(figure_path, filename))
