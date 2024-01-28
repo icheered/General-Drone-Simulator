@@ -210,7 +210,7 @@ class DroneEnv(Env):
                 self.episodes_without_target = 0
         
         # Penalty for not reaching a target
-        reward -= min((self.episodes_without_target - 150) * 0.0005, 3)
+        #reward -= min((self.episodes_without_target - 150) * 0.0005, 3)
 
         self.last_reward = reward
 
