@@ -102,23 +102,8 @@ class Display:
             motor_surface.blit(rocket, (0,0))
 
             # Emit particles from the rocket if activated
-            action = [1, 1, 0]
-            
-
-            # # # # # Create a triangle for the motor
-            # # # # color = GREEN if action[i] else RED
-            # # # # motor_triangle = pygame.draw.polygon(motor_surface, color, [(0, MOTOR_SIZE), (MOTOR_SIZE/2, 0), (MOTOR_SIZE, MOTOR_SIZE)])
-
-            # # # # # Create the number for the motor
-            # # # # font = pygame.font.SysFont(None, 20)
-            # # # # text_surface = font.render(str(i+1), False, (0, 0, 0)) 
-            
-            # # # # # Blit at the center
-            # # # # text_x = MOTOR_SIZE/2 - text_surface.get_width()/2
-            # # # # text_y = MOTOR_SIZE/2 - text_surface.get_height()/4
-
-            # # # # motor_surface.blit(text_surface, (text_x, text_y))
-
+            activated = action[i] # Get if the current motor is active or not
+    
             # Rotate the motor triangle
             motor_rotated = pygame.transform.rotate(motor_surface, (-motor[2])) # 0 degrees is right, 90 degrees is down
 
