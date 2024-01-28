@@ -123,7 +123,7 @@ class DroneEnv(Env):
         
         # Define ranges for randomization
         position_range = 0.7
-        exclusion_zone = 0.3  # range around zero to exclude
+        exclusion_zone = 0.4  # range around zero to exclude
         velocity_range = 0.2
         rotation_range = 1
         angular_velocity_range = 1
@@ -142,7 +142,7 @@ class DroneEnv(Env):
             self.state = [0] * 6
 
         # Randomize the target position
-        self.targets = [self.random_position(position_range, exclusion_zone) for _ in range(self.environment["num_targets"] * 2)]
+        self.targets = [self.random_position(position_range) for _ in range(self.environment["num_targets"] * 2)]
         self.start_position = (self.state[0], self.state[2])
         self.episodes_without_target = 0
         self.last_reward = 0
@@ -208,7 +208,7 @@ class DroneEnv(Env):
                 self.hit_targets += 1
 
                 # Logic to update this target's position
-                self.targets[i], self.targets[i+1] = self.random_position(0.8, exclusion=0.4), self.random_position(0.8, exclusion=0.4)
+                self.targets[i], self.targets[i+1] = self.random_position(0.8), self.random_position(0.8)
                 self.episodes_without_target = 0
         
         # Penalty for not reaching a target
