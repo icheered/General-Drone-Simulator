@@ -69,9 +69,9 @@ if train_model:
     env = DummyVecEnv(env_fns)
     check_env(env.envs[0], warn=True)  # Check if the environment is valid
 
-    stop_callback = StopTrainingOnRewardThreshold(reward_threshold=reward_threshold, verbose=1)
+    #stop_callback = StopTrainingOnRewardThreshold(reward_threshold=reward_threshold, verbose=1)
     eval_callback = EvalCallback(env, 
-                                callback_on_new_best=stop_callback, 
+                                #callback_on_new_best=stop_callback, 
                                 eval_freq=1000, 
                                 best_model_save_path=save_path, 
                                 verbose=1)
@@ -79,10 +79,10 @@ if train_model:
     # Monitor handles the plotting of reward and survive time during training
     monitor = Monitor(config, "PPO")
     logger_callback = LoggerCallback(monitor=monitor)
-    #reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
-    #callbacks = [eval_callback, logger_callback, reward_callback]
+    reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
+    callbacks = [eval_callback, logger_callback, reward_callback]
 
-    callbacks = [eval_callback, logger]
+    #callbacks = [eval_callback, logger]
 
     # Create the model
     model = None

@@ -72,6 +72,7 @@ class DroneEnv(Env):
         self.episode_step = 0
         self.last_action = [0] * len(self.motors)
         self.episodes_without_target = 0
+        self.hit_targets = 0
         self.reset()
 
     def get_observation(self, state=True, domain_params=True, targets=True):
@@ -145,9 +146,11 @@ class DroneEnv(Env):
         self.start_position = (self.state[0], self.state[2])
         self.episodes_without_target = 0
         self.last_reward = 0
+        self.hit_targets = 0
 
         # Update display if initialized
         if self.display is not None:
+            self.display.reset()
             self.display.update(self)
         
         # Return the observation (state) as a numpy array
@@ -189,25 +192,25 @@ class DroneEnv(Env):
     
     def _get_reward(self, done: bool):
         if done:
-            return -1000
+            return -100
         
         # Reward based on distance to closest target
         current_position = (self.state[0], self.state[2])
-        #closest_distance = min(np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) for i in range(0, len(self.targets), 2))
-        #reward = 1.0 / (closest_distance + 1.0)
         reward = 0
 
         # Bonus for reaching a target
         for i in range(0, len(self.targets), 2):
-            if np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) < 0.2:
-                reward += 100
+            min_distance = 0.1
+            if np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) < min_distance:
+                reward += 10
+                self.hit_targets += 1
 
                 # Logic to update this target's position
                 self.targets[i], self.targets[i+1] = self.random_position(0.8), self.random_position(0.8)
                 self.episodes_without_target = 0
         
         # Penalty for not reaching a target
-        reward -= min((self.episodes_without_target - 100) * 0.001, 3)
+        reward -= min((self.episodes_without_target - 150) * 0.0005, 3)
 
         self.last_reward = reward
 
