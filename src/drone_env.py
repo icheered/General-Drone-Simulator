@@ -121,7 +121,7 @@ class DroneEnv(Env):
             self.gravity = self.gravity_config[1]
         
         # Define ranges for randomization
-        position_range = 0.8
+        position_range = 0.7
         exclusion_zone = 0.4  # range around zero to exclude
         velocity_range = 0.2
         rotation_range = 1
@@ -136,6 +136,9 @@ class DroneEnv(Env):
             random.uniform(-rotation_range, rotation_range),  # Rotation
             random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
         ]
+
+        if not self.environment["randomize_start_state"]:
+            self.state = [0] * 6
 
         # Randomize the target position
         self.targets = [self.random_position(position_range) for _ in range(self.environment["num_targets"] * 2)]
@@ -250,7 +253,8 @@ class DroneEnv(Env):
 
     def _apply_gravity(self):
         # Apply gravity
-        self.state[3] += self.gravity * 1 * self.dt
+        old_state = self.state[3]
+        self.state[3] += self.gravity * self.dt
         
     def _ensure_state_within_boundaries(self):
         done = False

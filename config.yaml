@@ -1,22 +1,23 @@
 display:
-  width: 800
-  height: 600
+  width: 1200
+  height: 900
   update_frequency: 60
 
 drone:
-  mass: [0.1, 0.2, 0.3]     # Min, Default, Max 
-  inertia: [0.1, 0.2, 0.3]  # Min, Default, Max 
-  gravity: [0.9, 1, 1.1]    # Min, Default, Max 
+  mass: [0.1, 0.2, 1]     # Min, Default, Max 
+  inertia: [0.1, 1, 2]  # Min, Default, Max 
+  gravity: [1, 1, 1] # KEEP CONSTANT
   motors:
     - [-0.5, 0, 0, 50]
     - [0, 0, 0, 50]
     - [0.5, 0, 0, 50]    # X offset from drone center, Y offset from drone center, rotation relative to drone center, thrust
 
 environment:
+  randomize_start_state: True
   num_targets: 3 # Number of targets to spawn
-  domain_randomization: True
-  domain_knowledge: True 
-  domain_estimation: True # Whether to use true or estimated parameters
+  domain_randomization: False
+  domain_knowledge: True
+  domain_estimation: False # Whether to use true or estimated parameters
 
 training:
   num_envs: 16

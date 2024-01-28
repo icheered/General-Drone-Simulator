@@ -20,9 +20,10 @@ class Human:
             else:
                 self.input_status[i] = 0
         
-        action = 0
-        for i, status in enumerate(self.input_status):
-            action += status * 2**i
-
-
-        return action
+        # action = 0
+        # for i, status in enumerate(self.input_status):
+        #     action += status * 2**i
+        #return action
+                
+        return self.input_status
+    
