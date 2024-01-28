@@ -225,7 +225,7 @@ class Display:
     def _draw_state(self, drone):
         state = drone.get_observation(state=True, domain_params=False, targets=False)
         font = pygame.font.SysFont(None, 24)
-        y_offset = 0  # Starting y position for the first line of text
+        y_offset = 350  # Starting y position for the first line of text
         x_offset = 20  # Starting x position for the first line of text
         line_height = 25  # Height of each line of text
 
@@ -263,10 +263,10 @@ class Display:
         # Draw the target distances, defined as x and y times the number of targets
         # The targets come in pairs of 2, and they are the last 2*len(targets) elements of the state
         y_offset += line_height
-        target_idx = len(state) - len(drone.targets)  # Starting index of targets in the state array
-        for i in range(0, len(drone.targets), 2):
-            x_target = state[target_idx + i]
-            y_target = state[target_idx + i + 1]
+        targets = drone.get_observation(state=False, domain_params=False, targets=True)
+        for i in range(0, len(targets), 2):
+            x_target = targets[i]
+            y_target = targets[i + 1]
             label = f"T{i//2 + 1}"
             text = font.render(f"{label}: ({round(x_target, 2)}, {round(y_target, 2)})", True, TEXT)
             self.screen.blit(text, (x_offset, y_offset))
@@ -338,7 +338,11 @@ class Display:
         self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
         y_offset += 25
 
-        text = font.render(f"Reward: {round(drone.last_reward, 2)}", True, TEXT)
+        text = font.render(f"Frame reward: {round(drone.last_reward, 2)}", True, TEXT)
+        self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
+        y_offset += 25
+
+        text = font.render(f"Total reward: {round(drone.total_reward, 1)}", True, TEXT)
         self.screen.blit(text, (self.width - text.get_width() - x_offset, y_offset))
         y_offset += 25
 

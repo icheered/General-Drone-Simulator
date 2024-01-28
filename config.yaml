@@ -5,7 +5,7 @@ display:
 
 drone:
   mass: [0.1, 0.2, 1] # Min, Default, Max
-  inertia: [0.1, 1, 2] # Min, Default, Max
+  inertia: [0.1, 0.7, 2] # Min, Default, Max
   gravity: [1, 1, 1] # KEEP CONSTANT
   motors:
     - [-0.5, 0, 0, 50]
@@ -14,9 +14,9 @@ drone:
 
 environment:
   randomize_start_state: True
-  num_targets: 1 # Number of targets to spawn
-  domain_randomization: True
-  domain_knowledge: True
+  num_targets: 3
+  domain_randomization: False
+  domain_knowledge: False
   domain_estimation: False # Whether to use true or estimated parameters
 
 training:

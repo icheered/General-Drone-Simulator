@@ -73,6 +73,7 @@ class DroneEnv(Env):
         self.last_action = [0] * len(self.motors)
         self.episodes_without_target = 0
         self.hit_targets = 0
+        self.total_reward = 0
         self.reset()
 
     def get_observation(self, state=True, domain_params=True, targets=True):
@@ -86,13 +87,12 @@ class DroneEnv(Env):
         
         if targets:
             # Subtract the target position from the drone position
-            current_position = (self.state[0], self.state[2])
-            targets = self.targets.copy()
-            for i in range(0, len(targets), 2):
-                targets[i] -= current_position[0]
-                targets[i+1] -= current_position[1]
+            targetscopy = self.targets.copy()
+            for i in range(0, len(targetscopy), 2):
+                targetscopy[i] -= self.state[0]
+                targetscopy[i+1] -= self.state[2]
         
-            observation += targets
+            observation += targetscopy
         
         return observation
     
@@ -123,7 +123,7 @@ class DroneEnv(Env):
         
         # Define ranges for randomization
         position_range = 0.7
-        exclusion_zone = 0.4  # range around zero to exclude
+        exclusion_zone = 0.3  # range around zero to exclude
         velocity_range = 0.2
         rotation_range = 1
         angular_velocity_range = 1
@@ -131,8 +131,8 @@ class DroneEnv(Env):
         # Randomize the initial state
         self.state = [
             self.random_position(position_range, exclusion_zone),  # Position x
-            self.random_position(position_range, exclusion_zone),  # Position y
             random.uniform(-velocity_range, velocity_range),  # Velocity x
+            self.random_position(position_range, exclusion_zone),  # Position y
             random.uniform(-velocity_range, velocity_range),  # Velocity y
             random.uniform(-rotation_range, rotation_range),  # Rotation
             random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
@@ -142,11 +142,12 @@ class DroneEnv(Env):
             self.state = [0] * 6
 
         # Randomize the target position
-        self.targets = [self.random_position(position_range) for _ in range(self.environment["num_targets"] * 2)]
+        self.targets = [self.random_position(position_range, exclusion_zone) for _ in range(self.environment["num_targets"] * 2)]
         self.start_position = (self.state[0], self.state[2])
         self.episodes_without_target = 0
         self.last_reward = 0
         self.hit_targets = 0
+        self.total_reward = 0
 
         # Update display if initialized
         if self.display is not None:
@@ -177,11 +178,12 @@ class DroneEnv(Env):
         self._update_state_timestep()
 
         done = self._ensure_state_within_boundaries()
-        
+        reward = self._get_reward(done)
+        self.total_reward += reward
+
         if self.episode_step > self.max_episode_steps:
             done = True
-
-        reward = self._get_reward(done)
+        
         info = {"episode_step": self.episode_step} if done else {}
         truncated = False
 
@@ -200,13 +202,13 @@ class DroneEnv(Env):
 
         # Bonus for reaching a target
         for i in range(0, len(self.targets), 2):
-            min_distance = 0.1
+            min_distance = 0.15
             if np.linalg.norm(np.array(current_position) - np.array(self.targets[i:i+2])) < min_distance:
                 reward += 10
                 self.hit_targets += 1
 
                 # Logic to update this target's position
-                self.targets[i], self.targets[i+1] = self.random_position(0.8), self.random_position(0.8)
+                self.targets[i], self.targets[i+1] = self.random_position(0.8, exclusion=0.4), self.random_position(0.8, exclusion=0.4)
                 self.episodes_without_target = 0
         
         # Penalty for not reaching a target
@@ -256,7 +258,6 @@ class DroneEnv(Env):
 
     def _apply_gravity(self):
         # Apply gravity
-        old_state = self.state[3]
         self.state[3] += self.gravity * self.dt
         
     def _ensure_state_within_boundaries(self):
