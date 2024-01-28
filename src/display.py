@@ -182,6 +182,11 @@ class Display:
 
         
     def _draw_targets(self, drone):
+        target = pygame.image.load('media/target.png')
+        target_size = 10
+        target_rect = target.get_rect(center=(target_size / 2, target_size / 2))
+
+
         for i in range(0, len(drone.targets), 2):
             target_x = drone.targets[i] * self.width/2 + self.width/2
             target_y = drone.targets[i+1] * self.height/2 + self.height/2
@@ -189,6 +194,12 @@ class Display:
             cross_size = 10  # Size of the cross arms
             pygame.draw.line(self.screen, RED, (target_x - cross_size, target_y - cross_size), (target_x + cross_size, target_y + cross_size), 2)
             pygame.draw.line(self.screen, RED, (target_x + cross_size, target_y - cross_size), (target_x - cross_size, target_y + cross_size), 2)
+
+            # Update the target rectangle position
+            target_rect.center = (target_x, target_y)
+        
+            # Blit the image at the calculated position
+            self.screen.blit(target, target_rect)
 
     def _draw_simulation_stats(self, drone):
         # On the right hand side of the screen
@@ -217,9 +228,9 @@ class Display:
         self._draw_drone(drone)
         self._draw_targets(drone)
         
-        self._draw_start_point(drone)
+        #self._draw_start_point(drone)
         self._draw_state(drone)
-        self._draw_simulation_stats(drone)
+        #self._draw_simulation_stats(drone)
         pygame.display.flip()
 
         # Handle the event queue
