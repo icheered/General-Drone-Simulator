@@ -4,15 +4,38 @@
 
 import pygame
 import math
+import random
 
 pygame.init()
 
-BLACK = (0, 0, 0)
+BLACK = (50,50, 50)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0,255,0)
 DRONE_SIZE = 40  # Size of the drone square
-MOTOR_SIZE = 20   # Size of the motor squares
+MOTOR_SIZE = 40   # Size of the motor squares
+
+# Particle class
+class Particle:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.x_velocity = random.uniform(-1, 1)  # Horizontal velocity
+        self.y_velocity = random.uniform(-2, 0)  # Vertical velocity (upward)
+        self.lifetime = random.randint(20, 50)  # How long the particle will live
+        self.size = random.randint(2, 4)  # Size of the particle
+
+    def update(self):
+        self.x += self.x_velocity
+        self.y += self.y_velocity
+        self.lifetime -= 1  # Decrease the lifetime
+        self.size -= 0.1  # Shrink the particle
+        self.size = max(self.size, 0)  # Make sure size doesn't go negative
+
+    def draw(self, surface):
+        if self.lifetime > 0:
+            pygame.draw.circle(surface, (255, 255, 255), (int(self.x), int(self.y)), int(self.size))
+
 
 class Display:
     def __init__(self, config: dict, title: str):
@@ -48,15 +71,24 @@ class Display:
         # drone_surface.fill((10, 10, 10))
 
         # Draw the drone rectangle on the surface
-        drone_rect = pygame.Rect(self.width/2 - DRONE_SIZE/2, self.height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
-        pygame.draw.rect(drone_surface, WHITE, drone_rect)
+        # drone_rect = pygame.Rect(self.width/2 - DRONE_SIZE/2, self.height/2 - DRONE_SIZE/2, DRONE_SIZE, DRONE_SIZE)
+        # pygame.draw.rect(drone_surface, WHITE, drone_rect)
 
         action = drone.last_action
 
         for i, motor in enumerate(drone.motors):
             motor_x, motor_y, _, _ = motor
             # Draw a line from the motor center to the drone center
-            pygame.draw.line(drone_surface, WHITE, (motor_x * 100 + self.width/2, motor_y * 100 + self.height/2), (self.width/2, self.height/2), 10)
+            body_height = 10
+            pygame.draw.line(drone_surface, WHITE, (motor_x * 100 + self.width/2, motor_y * 100 + self.height/2), (self.width/2, self.height/2), body_height)
+
+
+            # Load the image just once, best to do this outside of the draw loop
+            original_target = pygame.image.load('media/rocket.png').convert_alpha()  # Ensure the image supports transparency
+
+            # Scale the image to the new size
+            rocket_size = (MOTOR_SIZE, MOTOR_SIZE)  # Desired size
+            rocket = pygame.transform.scale(original_target, rocket_size)
 
         for i, motor in enumerate(drone.motors):
             # Calculate the position to blit the motor triangle
@@ -67,26 +99,31 @@ class Display:
 
             # Create a surface for the motor
             motor_surface = pygame.Surface((MOTOR_SIZE, MOTOR_SIZE), pygame.SRCALPHA)  # Use SRCALPHA for transparency
+            motor_surface.blit(rocket, (0,0))
 
-            # Create a triangle for the motor
-            color = GREEN if action[i] else RED
-            motor_triangle = pygame.draw.polygon(motor_surface, color, [(0, MOTOR_SIZE), (MOTOR_SIZE/2, 0), (MOTOR_SIZE, MOTOR_SIZE)])
-
-            # Create the number for the motor
-            font = pygame.font.SysFont(None, 20)
-            text_surface = font.render(str(i+1), False, (0, 0, 0)) 
+            # Emit particles from the rocket if activated
+            action = [1, 1, 0]
             
-            # Blit at the center
-            text_x = MOTOR_SIZE/2 - text_surface.get_width()/2
-            text_y = MOTOR_SIZE/2 - text_surface.get_height()/4
 
-            motor_surface.blit(text_surface, (text_x, text_y))
+            # # # # # Create a triangle for the motor
+            # # # # color = GREEN if action[i] else RED
+            # # # # motor_triangle = pygame.draw.polygon(motor_surface, color, [(0, MOTOR_SIZE), (MOTOR_SIZE/2, 0), (MOTOR_SIZE, MOTOR_SIZE)])
+
+            # # # # # Create the number for the motor
+            # # # # font = pygame.font.SysFont(None, 20)
+            # # # # text_surface = font.render(str(i+1), False, (0, 0, 0)) 
+            
+            # # # # # Blit at the center
+            # # # # text_x = MOTOR_SIZE/2 - text_surface.get_width()/2
+            # # # # text_y = MOTOR_SIZE/2 - text_surface.get_height()/4
+
+            # # # # motor_surface.blit(text_surface, (text_x, text_y))
 
             # Rotate the motor triangle
-            motor_triangle = pygame.transform.rotate(motor_surface, (-motor[2])) # 0 degrees is right, 90 degrees is down
+            motor_rotated = pygame.transform.rotate(motor_surface, (-motor[2])) # 0 degrees is right, 90 degrees is down
 
             # Blit the motor triangle onto the drone surface at the calculated position
-            drone_surface.blit(motor_triangle, (motor_x_scaled, motor_y_scaled + MOTOR_SIZE/2))
+            drone_surface.blit(motor_rotated, (motor_x_scaled, motor_y_scaled + MOTOR_SIZE/2))
 
         # Rotate the combined drone and motors surface
         rotation = rotation * 180 / math.pi
@@ -180,26 +217,26 @@ class Display:
             self.screen.blit(text, (0, y_offset))
             y_offset += line_height
 
-        
     def _draw_targets(self, drone):
-        target = pygame.image.load('media/target.png')
-        target_size = 10
-        target_rect = target.get_rect(center=(target_size / 2, target_size / 2))
+        # Load the image just once, best to do this outside of the draw loop
+        original_target = pygame.image.load('media/target.png').convert_alpha()  # Ensure the image supports transparency
 
+        # Scale the image to the new size
+        target_px = 30
+        target_size = (target_px, target_px)  # Desired size
+        target = pygame.transform.scale(original_target, target_size)
+
+        # Tint the image red (assuming the original image is white or grayscale)
+        # If the image has multiple colors, this will blend them with red, potentially leading to undesired results
+        red_color = (255, 0, 0, 255)  # Red with full alpha
+        target.fill(red_color, special_flags=pygame.BLEND_RGBA_MULT)
 
         for i in range(0, len(drone.targets), 2):
-            target_x = drone.targets[i] * self.width/2 + self.width/2
-            target_y = drone.targets[i+1] * self.height/2 + self.height/2
+            target_x = int(drone.targets[i] * self.width / 2 + self.width / 2)
+            target_y = int(drone.targets[i+1] * self.height / 2 + self.height / 2)
 
-            cross_size = 10  # Size of the cross arms
-            pygame.draw.line(self.screen, RED, (target_x - cross_size, target_y - cross_size), (target_x + cross_size, target_y + cross_size), 2)
-            pygame.draw.line(self.screen, RED, (target_x + cross_size, target_y - cross_size), (target_x - cross_size, target_y + cross_size), 2)
-
-            # Update the target rectangle position
-            target_rect.center = (target_x, target_y)
-        
             # Blit the image at the calculated position
-            self.screen.blit(target, target_rect)
+            self.screen.blit(target, (target_x - target_size[0] // 2, target_y - target_size[1] // 2))  # Center the target
 
     def _draw_simulation_stats(self, drone):
         # On the right hand side of the screen
