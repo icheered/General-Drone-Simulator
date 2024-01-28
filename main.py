@@ -57,10 +57,10 @@ if show_env:
 
 if train_model:
     # Set training parameters
-    reward_threshold = 1000  # Stop training if the average reward is greater or equal to this value
-    num_envs = 16  # Number of parallel environments from which the experience replay buffer is sampled
-    max_episode_steps = 1000  # Max number of steps per episode
-    max_episodes = 1000
+    reward_threshold = config["training"]["reward_threshold"]  # Stop training if the average reward is greater or equal to this value
+    num_envs = config["training"]["num_envs"]  # Number of parallel environments from which the experience replay buffer is sampled
+    max_episode_steps = config["training"]["max_episode_steps"]  # Max number of steps per episode
+    max_episodes = config["training"]["episodes"]
     total_timesteps = num_envs * max_episode_steps * max_episodes
 
     # Create the environment
@@ -79,8 +79,8 @@ if train_model:
     # Monitor handles the plotting of reward and survive time during training
     monitor = Monitor(config, "PPO")
     logger_callback = LoggerCallback(monitor=monitor)
-    reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
-    callbacks = [eval_callback, logger_callback, reward_callback]
+    #reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
+    #callbacks = [eval_callback, logger_callback, reward_callback]
 
     callbacks = [eval_callback, logger]
 

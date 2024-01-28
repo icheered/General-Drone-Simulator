@@ -80,6 +80,7 @@ class DroneEnv(Env):
             observation += self.state
         
         if domain_params and self.environment["domain_knowledge"]:
+            # Todo: Use estimator instead of factual values
             observation += [self.mass, self.inertia, self.gravity]
         
         if targets:
@@ -93,21 +94,6 @@ class DroneEnv(Env):
             observation += targets
         
         return observation
-    
-
-
-    # def get_true_state(self):
-    #     # Subtract the target position from the drone position
-    #     current_position = (self.state[0], self.state[2])
-    #     targets = self.targets.copy()
-    #     for i in range(0, len(targets), 2):
-    #         targets[i] -= current_position[0]
-    #         targets[i+1] -= current_position[1]
-        
-    #     domain_parameters = [self.mass, self.inertia, self.gravity]
-
-    #     # Concatenate self.state, domain parameters, and targets
-    #     return np.concatenate((self.state, domain_parameters, targets), axis=None)
     
     def seed(self, seed=None):
         # Set the seed

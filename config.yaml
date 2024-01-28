@@ -15,4 +15,11 @@ drone:
 environment:
   num_targets: 3 # Number of targets to spawn
   domain_randomization: True
-  domain_knowledge: True
+  domain_knowledge: True 
+  domain_estimation: True # Whether to use true or estimated parameters
+
+training:
+  num_envs: 16
+  max_episode_steps: 1000
+  episodes: 1000
+  reward_threshold: 1000
