@@ -8,7 +8,7 @@ from tqdm import tqdm
 config = read_config("config.yaml")
 env = DroneEnv(config, max_episode_steps=1000)
 
-filename = "PPO_331_00-51-10_20240128-221022_best"
+filename = "PPO_227_00-45-55_20240128-231026_best"
 model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
 
 # Manual evaluation of the policy with a progress bar
