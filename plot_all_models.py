@@ -30,29 +30,66 @@ os.makedirs(output_folder, exist_ok=True)  # Create the directory if it doesn't 
 evaluations = load_from_json(input_file)
 
 # Create 2 plots. 1 for rewards for scenarios with static evaluation environment and 1 for dynamic evaluation environment
-static_scenarios = ["static_static", "dynamic_static", "smart_dynamic_static"]
-dynamic_scenarios = ["static_dynamic", "dynamic_dynamic", "smart_dynamic_dynamic"]
+# Loop through evaluations and get scenarios with static evaluation_environment.domain_randomization = False
+static_scenarios = []
+dynamic_scenarios = []
 
-# Create a plot for each scenario
-def plot_kde(scenarios, title):
+for scenario, data in evaluations.items():
+    if not data["evaluation_environment"]["domain_randomization"]:
+        static_scenarios.append(scenario)
+    else:
+        dynamic_scenarios.append(scenario)
+
+
+
+# Function to plot and save CDF
+def plot_cdf(scenarios, title):
     plt.figure(figsize=(10, 6))
     for scenario in scenarios:
-        sns.kdeplot(evaluations[scenario]["evaluation"]["rewards"], label=scenario)
-    plt.title(title)
+        label = ""
+        label += f"{'Dynamic' if evaluations[scenario]['training_environment']['domain_randomization'] else 'Static'}"
+        label += "with knowledge" if evaluations[scenario]['training_environment']['domain_knowledge'] else ""
+        sns.ecdfplot(evaluations[scenario]["evaluation"]["rewards"], label=label)
+    plt.title(title, fontsize=16)
     plt.xlabel('Rewards')
-    plt.ylabel('Density')
+    plt.ylabel('Cumulative Probability')
     plt.xlim(-100, 200)
     plt.legend()
 
-    # Save plot to file
-    # Remove spaces and make camel case
-    title = title.replace(" ", "_")
-    output_file = os.path.join('results', 'evaluation', title + '.png')
+    cdf_title = title.replace(" ", "_") + '_CDF.png'
+    output_file = os.path.join('results', 'evaluation', cdf_title)
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     plt.savefig(output_file)
 
-# Plot for static scenarios
-plot_kde(static_scenarios, "Evaluation in Static Environment")
+# Function to plot and save Box Plot
+def plot_box(scenarios, title):
+    plt.figure(figsize=(10, 6))
+    rewards_data = [evaluations[scenario]["evaluation"]["rewards"] for scenario in scenarios]
+    sns.boxplot(data=rewards_data)
+    labels = []
+    for scenario in scenarios:
+        label = ""
+        label += f"{'Dynamic' if evaluations[scenario]['training_environment']['domain_randomization'] else 'Static'}"
+        label += " with knowledge" if evaluations[scenario]['training_environment']['domain_knowledge'] else ""
+        labels.append(label)
+    plt.xticks(range(len(scenarios)), labels=labels)
+    plt.title(title, fontsize=18)
+    plt.xlabel('Training Environment', fontsize=14)
+    plt.ylabel('Rewards', fontsize=14)
 
-# Plot for dynamic scenarios
-plot_kde(dynamic_scenarios, "Evaluation in Dynamic Environment")
+    box_title = title.replace(" ", "_") + '_Box_Plot.png'
+    output_file = os.path.join('results', 'evaluation', box_title)
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    plt.savefig(output_file)
+
+# Plot CDF for static scenarios
+plot_cdf(static_scenarios, "Evaluation in Static Environment")
+
+# Plot Box Plot for static scenarios
+plot_box(static_scenarios, "Evaluation in Static Environment")
+
+# Plot CDF for dynamic scenarios
+plot_cdf(dynamic_scenarios, "Evaluation in Dynamic Environment")
+
+# Plot Box Plot for dynamic scenarios
+plot_box(dynamic_scenarios, "Evaluation in Dynamic Environment")

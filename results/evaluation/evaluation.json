@@ -2,7 +2,11 @@
     "static_static": {
         "title": "Trained: Static. Evaluated: Static",
         "model": "PPO_static_600_02:13:34",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": false,
+            "domain_knowledge": false
+        },
+        "evaluation_environment": {
             "domain_randomization": false,
             "domain_knowledge": false
         },
@@ -2016,7 +2020,11 @@
     "static_dynamic": {
         "title": "Trained: Static. Evaluated: Dynamic",
         "model": "PPO_static_600_02:13:34",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": false,
+            "domain_knowledge": false
+        },
+        "evaluation_environment": {
             "domain_randomization": true,
             "domain_knowledge": false
         },
@@ -4030,7 +4038,11 @@
     "dynamic_static": {
         "title": "Trained: Dynamic. Evaluated: Static",
         "model": "PPO_generalized_318_02:14:08",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": true,
+            "domain_knowledge": false
+        },
+        "evaluation_environment": {
             "domain_randomization": false,
             "domain_knowledge": false
         },
@@ -6044,7 +6056,11 @@
     "dynamic_dynamic": {
         "title": "Trained: Dynamic. Evaluated: Dynamic",
         "model": "PPO_generalized_318_02:14:08",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": true,
+            "domain_knowledge": false
+        },
+        "evaluation_environment": {
             "domain_randomization": true,
             "domain_knowledge": false
         },
@@ -8058,7 +8074,11 @@
     "smart_dynamic_static": {
         "title": "Trained: Dynamic with knowledge. Evaluated: Static",
         "model": "PPO_generalized_with_knowledge_440_02:15:04",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": true,
+            "domain_knowledge": true
+        },
+        "evaluation_environment": {
             "domain_randomization": false,
             "domain_knowledge": true
         },
@@ -10072,7 +10092,11 @@
     "smart_dynamic_dynamic": {
         "title": "Trained: Dynamic with knowledge. Evaluated: Dynamic",
         "model": "PPO_generalized_with_knowledge_440_02:15:04",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": true,
+            "domain_knowledge": true
+        },
+        "evaluation_environment": {
             "domain_randomization": true,
             "domain_knowledge": true
         },

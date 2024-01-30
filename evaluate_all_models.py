@@ -10,7 +10,11 @@ scenarios = {
     "static_static": {
         "title": "Trained: Static. Evaluated: Static",
         "model": "PPO_static_600_02:13:34",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": False,
+            "domain_knowledge": False
+        },
+        "evaluation_environment": {
             "domain_randomization": False,
             "domain_knowledge": False
         }
@@ -18,7 +22,11 @@ scenarios = {
     "static_dynamic": {
         "title": "Trained: Static. Evaluated: Dynamic",
         "model": "PPO_static_600_02:13:34",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": False,
+            "domain_knowledge": False
+        },
+        "evaluation_environment": {
             "domain_randomization": True,
             "domain_knowledge": False
         }
@@ -26,7 +34,11 @@ scenarios = {
     "dynamic_static": {
         "title": "Trained: Dynamic. Evaluated: Static",
         "model": "PPO_generalized_318_02:14:08",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": True,
+            "domain_knowledge": False
+        },
+        "evaluation_environment": {
             "domain_randomization": False,
             "domain_knowledge": False
         }
@@ -34,7 +46,11 @@ scenarios = {
     "dynamic_dynamic": {
         "title": "Trained: Dynamic. Evaluated: Dynamic",
         "model": "PPO_generalized_318_02:14:08",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": True,
+            "domain_knowledge": False
+        },
+        "evaluation_environment": {
             "domain_randomization": True,
             "domain_knowledge": False
         }
@@ -42,7 +58,11 @@ scenarios = {
     "smart_dynamic_static": {
         "title": "Trained: Dynamic with knowledge. Evaluated: Static",
         "model": "PPO_generalized_with_knowledge_440_02:15:04",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": True,
+            "domain_knowledge": True
+        },
+        "evaluation_environment": {
             "domain_randomization": False,
             "domain_knowledge": True
         }
@@ -50,7 +70,11 @@ scenarios = {
     "smart_dynamic_dynamic": {
         "title": "Trained: Dynamic with knowledge. Evaluated: Dynamic",
         "model": "PPO_generalized_with_knowledge_440_02:15:04",
-        "environment": {
+        "training_environment": {
+            "domain_randomization": True,
+            "domain_knowledge": True
+        },
+        "evaluation_environment": {
             "domain_randomization": True,
             "domain_knowledge": True
         }
@@ -78,8 +102,8 @@ evaluations = load_from_json(output_file)
 
 
 for name, scenario in scenarios.items():
-    config["environment"]["domain_randomization"] = scenario["environment"]["domain_randomization"]
-    config["environment"]["domain_knowledge"] = scenario["environment"]["domain_knowledge"]
+    config["environment"]["domain_randomization"] = scenario["evaluation_environment"]["domain_randomization"]
+    config["environment"]["domain_knowledge"] = scenario["evaluation_environment"]["domain_knowledge"]
 
     env = DroneEnv(config, max_episode_steps=1000)
     model = PPO.load(os.path.join('results', 'saved_models', scenario["model"]), env=env)
