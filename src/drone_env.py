@@ -34,11 +34,6 @@ class DroneEnv(Env):
             [1, 5, 1, 5, np.pi, 40]
         ]
 
-        # observation_domain_range = [
-        #     [self.mass_config[0], self.inertia_config[0], self.gravity_config[0]],
-        #     [self.mass_config[-1], self.inertia_config[-1], self.gravity_config[-1]]
-        # ]
-
         observation_domain_range = [
             [self.mass_config[0], self.inertia_config[0]],
             [self.mass_config[-1], self.inertia_config[-1]]
@@ -136,11 +131,11 @@ class DroneEnv(Env):
 
         # Randomize the initial state
         self.state = [
-            self.random_position(position_range, exclusion_zone),  # Position x
-            random.uniform(-velocity_range, velocity_range),  # Velocity x
-            self.random_position(position_range, exclusion_zone),  # Position y
-            random.uniform(-velocity_range, velocity_range),  # Velocity y
-            random.uniform(-rotation_range, rotation_range),  # Rotation
+            self.random_position(position_range, exclusion_zone),   # Position x
+            random.uniform(-velocity_range, velocity_range),        # Velocity x
+            self.random_position(position_range, exclusion_zone),   # Position y
+            random.uniform(-velocity_range, velocity_range),        # Velocity y
+            random.uniform(-rotation_range, rotation_range),        # Rotation
             random.uniform(-angular_velocity_range, angular_velocity_range),  # Angular velocity
         ]
 
@@ -231,7 +226,6 @@ class DroneEnv(Env):
         net_torque = 0.0
 
         # Get rotation angle in degrees (currently in radians)
-        #rotation_angle = math.degrees(self.state[4])
         rotation_angle = self.state[4]
 
         for i, motor in enumerate(self.motors):            

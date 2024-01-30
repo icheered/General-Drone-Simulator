@@ -62,7 +62,7 @@ if train_model:
     max_episode_steps = config["training"]["max_episode_steps"]  # Max number of steps per episode
     max_episodes = config["training"]["episodes"]
     total_timesteps = num_envs * max_episode_steps * max_episodes
-
+g
     # Create the environment
     model_type = "PPO"
     env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=1000) for _ in range(num_envs)]
