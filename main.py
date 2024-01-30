@@ -106,7 +106,7 @@ if train_model:
     training_duration = time.strftime('%H-%M-%S', time.gmtime(time.time() - start_time))
     filename = f"{model_type}_{num_episodes}_{training_duration}_{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
     model.save(os.path.join(save_path, filename))
-    monitor.close(os.path.join(figure_path, filename))
+    #monitor.close(os.path.join(figure_path, filename))
 
     # Copy the 'best_model' to 'filename + _best'
     best_model_path = os.path.join(save_path, "best_model.zip")

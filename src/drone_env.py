@@ -176,7 +176,7 @@ class DroneEnv(Env):
         # Apply motor inputs
         self._apply_action(action)
         self._apply_gravity()
-        self._update_state_timestep()
+        rotations = self._update_state_timestep()
 
         done = self._ensure_state_within_boundaries()
         reward = self._get_reward(done)
@@ -280,7 +280,19 @@ class DroneEnv(Env):
         self.state[4] += self.state[5] * self.dt  # Update rotation
         
         # Ensure the rotation stays within -pi to pi
-        self.state[4] = math.atan2(math.sin(self.state[4]), math.cos(self.state[4]))
+        # Check if the rotation is greater than pi
+        if self.state[4] > math.pi:
+            # Subtract 2pi to bring it back within -pi to pi
+            self.state[4] -= 2 * math.pi
+            return 1
+        # Check if the rotation is less than -pi
+        elif self.state[4] < -math.pi:
+            # Add 2pi to bring it back within -pi to pi
+            self.state[4] += 2 * math.pi
+            return -1
+        return 0
+
+        #self.state[4] = math.atan2(math.sin(self.state[4]), math.cos(self.state[4]))
 
     def close(self):
         # Call super class
