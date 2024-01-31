@@ -9,7 +9,7 @@ import json
 scenarios = {
     "static_static": {
         "title": "Trained: Static. Evaluated: Static",
-        "model": "PPO_static_600_02:13:34",
+        "model": "PPO_static",
         "training_environment": {
             "domain_randomization": False,
             "domain_knowledge": False
@@ -21,7 +21,7 @@ scenarios = {
     },
     "static_dynamic": {
         "title": "Trained: Static. Evaluated: Dynamic",
-        "model": "PPO_static_600_02:13:34",
+        "model": "PPO_static",
         "training_environment": {
             "domain_randomization": False,
             "domain_knowledge": False
@@ -33,7 +33,7 @@ scenarios = {
     },
     "dynamic_static": {
         "title": "Trained: Dynamic. Evaluated: Static",
-        "model": "PPO_generalized_318_02:14:08",
+        "model": "PPO_generalized",
         "training_environment": {
             "domain_randomization": True,
             "domain_knowledge": False
@@ -45,7 +45,7 @@ scenarios = {
     },
     "dynamic_dynamic": {
         "title": "Trained: Dynamic. Evaluated: Dynamic",
-        "model": "PPO_generalized_318_02:14:08",
+        "model": "PPO_generalized",
         "training_environment": {
             "domain_randomization": True,
             "domain_knowledge": False
@@ -57,7 +57,7 @@ scenarios = {
     },
     "smart_dynamic_static": {
         "title": "Trained: Dynamic with knowledge. Evaluated: Static",
-        "model": "PPO_generalized_with_knowledge_440_02:15:04",
+        "model": "PPO_generalized_with_knowledge",
         "training_environment": {
             "domain_randomization": True,
             "domain_knowledge": True
@@ -69,7 +69,7 @@ scenarios = {
     },
     "smart_dynamic_dynamic": {
         "title": "Trained: Dynamic with knowledge. Evaluated: Dynamic",
-        "model": "PPO_generalized_with_knowledge_440_02:15:04",
+        "model": "PPO_generalized_with_knowledge",
         "training_environment": {
             "domain_randomization": True,
             "domain_knowledge": True

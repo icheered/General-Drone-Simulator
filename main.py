@@ -81,7 +81,6 @@ if train_model:
     logger_callback = LoggerCallback(monitor=monitor)
     reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
     #callbacks = [eval_callback, logger_callback, reward_callback]
-
     callbacks = [eval_callback]
 
     # Create the model

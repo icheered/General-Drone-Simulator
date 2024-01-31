@@ -35,8 +35,8 @@ class DroneEnv(Env):
         ]
 
         observation_domain_range = [
-            [self.mass_config[0], self.inertia_config[0]],
-            [self.mass_config[-1], self.inertia_config[-1]]
+            [self.mass_config[0], self.inertia_config[0], self.gravity_config[0]],
+            [self.mass_config[-1], self.inertia_config[-1], self.gravity_config[-1]]
         ]
 
         observation_target_range = [
@@ -83,8 +83,8 @@ class DroneEnv(Env):
         
         if domain_params and self.environment["domain_knowledge"]:
             # Todo: Use estimator instead of factual values
-            #observation += [self.mass, self.inertia, self.gravity]
-            observation += [self.mass, self.inertia]
+            observation += [self.mass, self.inertia, self.gravity]
+            #observation += [self.mass, self.inertia]
         
         if targets:
             # Subtract the target position from the drone position
