@@ -25,7 +25,7 @@ print("Using device: {}".format(device))
 config = read_config("config.yaml")
 save_path = os.path.join('training', 'saved_models')
 figure_path = os.path.join('training', 'figures')
-log_path = os.path.join('training', 'logs')
+log_path = os.path.join('training', 'tensorboard')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
 

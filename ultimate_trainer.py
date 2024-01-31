@@ -13,9 +13,6 @@ from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 
 from src.drone_env import DroneEnv
 from src.utils import read_config, format_number
-from src.monitor import Monitor
-from src.logger_callback import LoggerCallback
-from src.reward_callback import StopTrainingOnMovingAverageReward
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: {}".format(device))
@@ -24,12 +21,10 @@ print("Using device: {}".format(device))
 config = read_config("config.yaml")
 save_path = os.path.join('results', 'saved_models')
 figure_path = os.path.join('results', 'figures')
-log_path = os.path.join('results', 'logs')
+log_path = os.path.join('results', 'tensorboard')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
-# Train on a static environment
-# Train on a dynamic environment
-# Train on a dynamic environment with exact knowledge of domain
+
 scenarios = {
     "static": {
         "domain_randomization": False,
@@ -75,8 +70,11 @@ for name, scenario in scenarios.items():
     # Monitor handles the plotting of reward and survive time during training
     callbacks = [eval_callback]
 
+    # Create a unique log directory for this scenario
+    scenario_log_path = os.path.join(log_path, name)  # Append the scenario name to the log path
+
     # Create the model
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=scenario_log_path)
 
     # Do the actual learning
     start_time = time.time()
