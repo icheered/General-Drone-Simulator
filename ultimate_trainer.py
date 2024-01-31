@@ -73,10 +73,6 @@ for name, scenario in scenarios.items():
                                 verbose=1)
 
     # Monitor handles the plotting of reward and survive time during training
-    #monitor = Monitor(config, "PPO")
-    #logger_callback = LoggerCallback(monitor=monitor)
-    #reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
-    #callbacks = [eval_callback, logger_callback, reward_callback]
     callbacks = [eval_callback]
 
     # Create the model
@@ -90,14 +86,6 @@ for name, scenario in scenarios.items():
         print("Keyboard interrupt detected, exiting training loop")
 
     # Save the model and graph to disk
-    #num_episodes = format_number(len(monitor.rewards))
-    training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
-    filename = f"{model_type}_{name}_{training_duration}"
+    filename = f"{model_type}_{name}"
     model.save(os.path.join(save_path, filename))
-    #monitor.close(os.path.join(figure_path, filename))
-
-    # Copy the 'best_model' to 'filename + _best'
-    # best_model_path = os.path.join(save_path, "best_model.zip")
-    # best_model_filename = f"{filename}_best"
-    # os.rename(best_model_path, os.path.join(save_path, best_model_filename+".zip"))
     print(f"Model saved to {filename}")
