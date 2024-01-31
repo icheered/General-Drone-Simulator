@@ -24,12 +24,10 @@ print("Using device: {}".format(device))
 config = read_config("config.yaml")
 save_path = os.path.join('results', 'saved_models')
 figure_path = os.path.join('results', 'figures')
-log_path = os.path.join('results', 'logs')
+log_path = os.path.join('results', 'tensorboard')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
-# Train on a static environment
-# Train on a dynamic environment
-# Train on a dynamic environment with exact knowledge of domain
+
 scenarios = {
     "static": {
         "domain_randomization": False,
@@ -73,14 +71,13 @@ for name, scenario in scenarios.items():
                                 verbose=1)
 
     # Monitor handles the plotting of reward and survive time during training
-    #monitor = Monitor(config, "PPO")
-    #logger_callback = LoggerCallback(monitor=monitor)
-    #reward_callback = StopTrainingOnMovingAverageReward(reward_threshold=reward_threshold, window_size=25, verbose=1)
-    #callbacks = [eval_callback, logger_callback, reward_callback]
     callbacks = [eval_callback]
 
+    # Create a unique log directory for this scenario
+    scenario_log_path = os.path.join(log_path, name)  # Append the scenario name to the log path
+
     # Create the model
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=scenario_log_path)
 
     # Do the actual learning
     start_time = time.time()
@@ -90,14 +87,7 @@ for name, scenario in scenarios.items():
         print("Keyboard interrupt detected, exiting training loop")
 
     # Save the model and graph to disk
-    #num_episodes = format_number(len(monitor.rewards))
     training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
     filename = f"{model_type}_{name}_{training_duration}"
     model.save(os.path.join(save_path, filename))
-    #monitor.close(os.path.join(figure_path, filename))
-
-    # Copy the 'best_model' to 'filename + _best'
-    # best_model_path = os.path.join(save_path, "best_model.zip")
-    # best_model_filename = f"{filename}_best"
-    # os.rename(best_model_path, os.path.join(save_path, best_model_filename+".zip"))
     print(f"Model saved to {filename}")
