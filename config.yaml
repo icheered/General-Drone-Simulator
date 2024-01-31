@@ -5,8 +5,8 @@ display:
 
 drone:
   mass: [0.1, 0.2, 1] # Min, Default, Max
-  inertia: [0.1, 0.7, 2] # Min, Default, Max
-  gravity: [1, 1, 1] # KEEP CONSTANT
+  inertia: [0.1, 0.3, 2] # Min, Default, Max
+  gravity: [0.8, 1, 1.2] # KEEP CONSTANT
   motors:
     - [-0.5, 0, 0, 50]
     - [0, 0, 0, 50]
@@ -23,4 +23,4 @@ training:
   num_envs: 16
   max_episode_steps: 1000
   episodes: 1000
-  reward_threshold: 1000
+  reward_threshold: 10000

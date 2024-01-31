@@ -34,7 +34,7 @@ class Particle:
         self.x_velocity = vx + random.uniform(-0.5, 0.5)  # Horizontal velocity
         self.y_velocity = vy + random.uniform(-0.5, 0.5)  # Vertical velocity (upward)
         self.thrust = thrust
-        self.lifetime = random.randint(20, 60)  # How long the particle will live
+        self.lifetime = random.randint(10, 20)  # How long the particle will live
         self.size = random.randint(2, 4)  # Size of the particle
 
     def update(self):
@@ -123,6 +123,7 @@ class Display:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
+        self.highscore = 0
     
     def reset(self):
         self.screen.fill(BACKGROUND)
@@ -348,19 +349,29 @@ class Display:
 
     
     def _draw_title(self, drone):
+
+        if drone.hit_targets > self.highscore:
+            self.highscore = drone.hit_targets
         # Print "Current Score"
         font = pygame.font.Font("media/LilitaOne-Regular.ttf", 50)
         text = font.render(f"Current Score: {drone.hit_targets}", True, TEXT)
         self.screen.blit(text, (self.width/2 - text.get_width()/2, 20))
 
+        # Print "High score"
+        font = pygame.font.Font("media/LilitaOne-Regular.ttf", 15)
+        text = font.render(f"High score: {self.highscore}", True, TEXT)
+        self.screen.blit(text, (self.width/2 - text.get_width()/2, 80))
+        
         # Print "Simulation progress"
         font = pygame.font.Font("media/LilitaOne-Regular.ttf", 15)
         text = font.render(f"Simulation progress", True, TEXT)
-        self.screen.blit(text, (self.width/2 - text.get_width()/2, 80))
+        self.screen.blit(text, (self.width/2 - text.get_width()/2, 100))
+
+        
 
         # Print progress bar
         progress = drone.episode_step / drone.max_episode_steps
-        draw_progress_bar(self.screen, (self.width/2 - 100, 105), (200, 20), progress)
+        draw_progress_bar(self.screen, (self.width/2 - 100, 125), (200, 20), progress)
     
     def _draw_run_info(self, drone):
         font = pygame.font.Font("media/LilitaOne-Regular.ttf", 25)
@@ -403,9 +414,9 @@ class Display:
         x_offset = 20
         line_height = 30
 
-        configs = [drone.mass_config, drone.inertia_config]
-        parameters = [drone.mass, drone.inertia]
-        labels = ["Mass", "Inertia"]
+        configs = [drone.mass_config, drone.inertia_config, drone.gravity_config]
+        parameters = [drone.mass, drone.inertia, drone.gravity]
+        labels = ["Mass", "Inertia", "Gravity"]
 
         # For each config, display a progress bar filled to the current value
         for config, parameter, label in zip(configs, parameters, labels):
