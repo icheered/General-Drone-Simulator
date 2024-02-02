@@ -15,8 +15,8 @@ drone:
 environment:
   randomize_start_state: True
   num_targets: 3
-  domain_randomization: False
-  domain_knowledge: False
+  domain_randomization: True
+  domain_knowledge: True
   domain_estimation: False # Whether to use true or estimated parameters
 
 training:

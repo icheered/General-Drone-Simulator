@@ -21,13 +21,13 @@ def main():
 
     # Read config and set up tensorboard logging
     config = read_config("config.yaml")
-    filename = "best_model"
+    filename = "PPO_generalized_with_knowledge_440_02:15:04"
 
     env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
     try:
         while True:
             #model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
-            model = PPO.load(os.path.join('training', 'saved_models', filename), env=env)
+            model = PPO.load(os.path.join('results', 'saved_models', filename), env=env)
             obs, _ = env.reset()
             done = False
             score = 0 
