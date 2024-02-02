@@ -89,7 +89,9 @@ for name, scenario in scenarios.items():
 
     # Create the model
     tensorboard_log_path = os.path.join(log_path, f"{name}")
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=tensorboard_log_path)
+    #model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=tensorboard_log_path)
+    estimation_model = os.path.join(save_path, "PPO_generalized_with_estimation")
+    model = PPO.load(estimation_model, env=env, verbose=1, tensorboard_log=tensorboard_log_path)
 
     # Do the actual learning
     start_time = time.time()
