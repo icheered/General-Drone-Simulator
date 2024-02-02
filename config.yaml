@@ -17,7 +17,7 @@ environment:
   num_targets: 3
   domain_randomization: True
   domain_knowledge: True
-  domain_estimation: False # Whether to use true or estimated parameters
+  domain_estimation: True # Whether to use true or estimated parameters
 
 training:
   num_envs: 16

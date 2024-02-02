@@ -9,7 +9,10 @@ import numpy as np
 import random
 import math
 from src.display import Display
-import time
+import torch
+import os
+
+lstm_training_window = 10
 
 class DroneEnv(Env):
     def __init__(self, config: dict, render_mode=None, max_episode_steps=1000):
@@ -57,6 +60,9 @@ class DroneEnv(Env):
                 high=np.concatenate(observation_state_range[1] + observation_target_range[1], axis=None),
                 dtype=np.float32
             )
+        # Include estimator if domain estimation is enabled
+        if self.environment["domain_estimation"]:
+            self.parameter_estimator = torch.load(os.path.join("results", "LSTM_model.zip"))
 
         # Flag to control rendering
         self.enable_rendering = render_mode == "human"
@@ -74,17 +80,31 @@ class DroneEnv(Env):
         self.episodes_without_target = 0
         self.hit_targets = 0
         self.total_reward = 0
+        self.state_history = []
         self.reset()
 
     def get_observation(self, state=True, domain_params=True, targets=True):
+
         observation = []
         if state:
             observation += self.state
         
         if domain_params and self.environment["domain_knowledge"]:
-            # Todo: Use estimator instead of factual values
-            #observation += [self.mass, self.inertia, self.gravity]
             observation += [self.mass, self.inertia]
+            # print("Adding domain knowledge")
+            # if self.environment["domain_estimation"] and len(self.state_history) >= lstm_training_window:
+            #     # Include the domain parameters as input to the LSTM    
+            #     print("Estimating parameters")
+            #     print(f"State history: {self.state_history}")
+            #     x, y = self.parameter_estimator.pre_process(self.state_history, [self.mass, self.inertia], lstm_training_window)
+            #     print(f"X: {x}, Y: {y}")
+            #     self.parameter_estimator.eval()
+            #     y_pred = self.parameter_estimator(x)
+            #     print("Estimated parameters", y_pred.detach().numpy().tolist())
+            #     observation += y_pred.detach().numpy().tolist()
+            # else:
+            #     print("Adding raw values")
+            #     observation += [self.mass, self.inertia]
         
         if targets:
             # Subtract the target position from the drone position
@@ -95,6 +115,7 @@ class DroneEnv(Env):
         
             observation += targetscopy
         
+        print(f"Returning observation: {observation}")
         return observation
     
     def seed(self, seed=None):
@@ -128,6 +149,7 @@ class DroneEnv(Env):
         velocity_range = 0.2
         rotation_range = 1
         angular_velocity_range = 1
+        self.state_history = []
 
         # Randomize the initial state
         self.state = [
@@ -188,6 +210,13 @@ class DroneEnv(Env):
         info = {"episode_step": self.episode_step} if done else {}
         truncated = False
 
+        # Track the state history
+        if self.environment["domain_estimation"]:
+            state = self.get_observation(state=True, domain_params=False, targets=False)
+            lstm_input = np.concatenate((state, action)).tolist()
+            self.state_history.append(lstm_input)
+        
+        
         # Convert the observation to a numpy array
         obs = np.array(self.get_observation(), dtype=np.float32)
 
