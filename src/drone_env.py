@@ -90,14 +90,15 @@ class DroneEnv(Env):
             observation += self.state
         
         if domain_params and self.environment["domain_knowledge"]:
-            #observation += [self.mass, self.inertia]
-            if self.environment["domain_estimation"] and len(self.state_history) >= lstm_training_window:
+            if self.environment["domain_estimation"] and len(self.state_history) > lstm_training_window:
                 # Include the domain parameters as input to the LSTM    
                 print("Estimating parameters")
                 print(f"State history shape: {np.array(self.state_history).shape}")
                 for i in range(len(self.state_history)):
                     print(f"State history {i}: {[round(param,3) for param in self.state_history[i]]}")
 
+                transposed_state = np.array(self.state_history).transpose()
+                print(f"Transposed state shape: {transposed_state.shape}")
                 x, y = self.parameter_estimator.pre_process(traj=self.state_history, labels=[self.mass, self.inertia], window=lstm_training_window)
                 print(f"X: {x}, Y: {y}")
                 self.parameter_estimator.eval()

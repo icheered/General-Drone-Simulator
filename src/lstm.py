@@ -64,7 +64,7 @@ class ParameterEstimator(nn.Module):
             noiseX = 1 + np.clip(noiseX, -3 * noise_level, 3 * noise_level)
             X = X * noiseX
         
-        # Reshape X to the desired dimensions (250x9x20)
+        # Reshape X to the desired dimensions
         print(f"Shape of X: {np.array(X).shape}")
         X = np.array(X)
         X = X.transpose(0, 2, 1)
