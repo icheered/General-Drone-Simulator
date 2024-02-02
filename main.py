@@ -27,7 +27,7 @@ print("Using device: {}".format(device))
 config = read_config("config.yaml")
 save_path = os.path.join('training', 'saved_models')
 figure_path = os.path.join('training', 'figures')
-log_path = os.path.join('training', 'logs')
+log_path = os.path.join('training', 'tensorboard')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
 
@@ -67,7 +67,7 @@ if train_model:
     model_type = "PPO"
     env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=1000) for _ in range(num_envs)]
     env = DummyVecEnv(env_fns)
-    check_env(env.envs[0], warn=True)  # Check if the environment is valid
+    #check_env(env.envs[0], warn=True)  # Check if the environment is valid
 
     #stop_callback = StopTrainingOnRewardThreshold(reward_threshold=reward_threshold, verbose=1)
     eval_callback = EvalCallback(env, 

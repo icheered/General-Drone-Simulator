@@ -48,12 +48,15 @@ class ParameterEstimator(nn.Module):
     def pre_process(self, traj, labels, window, noise_level=0):
         X = []
         if len(traj[0]) < window:
+            print(f"Trajectory length smaller than window: {len(traj[0])}")
             for row in traj:
                 padded_row = row + [0] * (window - len(row))
                 X.append(padded_row)
         elif len(traj[0]) > window:
+            print(f"Trajectory length larger than window: {len(traj[0])}")
             X = [row[-window:] for row in traj]
         else:
+            print("Trajectory length is equal to window length")
             X = traj
 
         if noise_level:
@@ -62,6 +65,7 @@ class ParameterEstimator(nn.Module):
             X = X * noiseX
         
         # Reshape X to the desired dimensions (250x9x20)
+        print(f"Shape of X: {np.array(X).shape}")
         X = np.array(X)
         X = X.transpose(0, 2, 1)
 

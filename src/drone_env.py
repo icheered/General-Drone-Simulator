@@ -90,21 +90,22 @@ class DroneEnv(Env):
             observation += self.state
         
         if domain_params and self.environment["domain_knowledge"]:
-            observation += [self.mass, self.inertia]
-            # print("Adding domain knowledge")
-            # if self.environment["domain_estimation"] and len(self.state_history) >= lstm_training_window:
-            #     # Include the domain parameters as input to the LSTM    
-            #     print("Estimating parameters")
-            #     print(f"State history: {self.state_history}")
-            #     x, y = self.parameter_estimator.pre_process(self.state_history, [self.mass, self.inertia], lstm_training_window)
-            #     print(f"X: {x}, Y: {y}")
-            #     self.parameter_estimator.eval()
-            #     y_pred = self.parameter_estimator(x)
-            #     print("Estimated parameters", y_pred.detach().numpy().tolist())
-            #     observation += y_pred.detach().numpy().tolist()
-            # else:
-            #     print("Adding raw values")
-            #     observation += [self.mass, self.inertia]
+            #observation += [self.mass, self.inertia]
+            if self.environment["domain_estimation"] and len(self.state_history) >= lstm_training_window:
+                # Include the domain parameters as input to the LSTM    
+                print("Estimating parameters")
+                print(f"State history shape: {np.array(self.state_history).shape}")
+                for i in range(len(self.state_history)):
+                    print(f"State history {i}: {[round(param,3) for param in self.state_history[i]]}")
+
+                x, y = self.parameter_estimator.pre_process(traj=self.state_history, labels=[self.mass, self.inertia], window=lstm_training_window)
+                print(f"X: {x}, Y: {y}")
+                self.parameter_estimator.eval()
+                y_pred = self.parameter_estimator(x)
+                print("Estimated parameters", y_pred.detach().numpy().tolist())
+                observation += y_pred.detach().numpy().tolist()
+            else:
+                observation += [self.mass, self.inertia]
         
         if targets:
             # Subtract the target position from the drone position
@@ -114,8 +115,7 @@ class DroneEnv(Env):
                 targetscopy[i+1] -= self.state[2]
         
             observation += targetscopy
-        
-        print(f"Returning observation: {observation}")
+
         return observation
     
     def seed(self, seed=None):

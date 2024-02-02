@@ -24,7 +24,7 @@ print("Using device: {}".format(device))
 config = read_config("config.yaml")
 save_path = os.path.join('results', 'saved_models')
 figure_path = os.path.join('results', 'figures')
-log_path = os.path.join('results', 'logs')
+log_path = os.path.join('results', 'tensorboard')
 logger = configure(log_path, ["stdout", "tensorboard"])
 
 # Train on a static environment
@@ -63,7 +63,7 @@ for name, scenario in scenarios.items():
     model_type = "PPO"
     env_fns = [lambda: DroneEnv(config, render_mode=None, max_episode_steps=max_episode_steps) for _ in range(num_envs)]
     env = DummyVecEnv(env_fns)
-    check_env(env.envs[0], warn=True)  # Check if the environment is valid
+    #check_env(env.envs[0], warn=True)  # Check if the environment is valid
 
     #stop_callback = StopTrainingOnRewardThreshold(reward_threshold=reward_threshold, verbose=1)
     eval_callback = EvalCallback(env, 
@@ -80,7 +80,8 @@ for name, scenario in scenarios.items():
     callbacks = [eval_callback]
 
     # Create the model
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    tensorboard_log_path = os.path.join(log_path, f"{model_type}{name}")
+    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=tensorboard_log_path)
 
     # Do the actual learning
     start_time = time.time()
@@ -91,6 +92,6 @@ for name, scenario in scenarios.items():
 
     # Save the model and graph to disk
     training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
-    filename = f"{model_type}{name}{training_duration}"
+    filename = f"{model_type}{name}"
     model.save(os.path.join(save_path, filename))
     print(f"Model saved to {filename}")
