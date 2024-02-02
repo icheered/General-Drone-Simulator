@@ -48,7 +48,10 @@ def plot_cdf(scenarios, title):
     for scenario in scenarios:
         label = ""
         label += f"{'Dynamic' if evaluations[scenario]['training_environment']['domain_randomization'] else 'Static'}"
-        label += "with knowledge" if evaluations[scenario]['training_environment']['domain_knowledge'] else ""
+        if "domain_estimation" in evaluations[scenario]['training_environment'] and evaluations[scenario]['training_environment']['domain_estimation']:
+            label += " with estimation"
+        elif evaluations[scenario]['training_environment']['domain_knowledge']:
+            label += " with knowledge"
         sns.ecdfplot(evaluations[scenario]["evaluation"]["rewards"], label=label)
     plt.title(title, fontsize=16)
     plt.xlabel('Rewards')
