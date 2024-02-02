@@ -13,31 +13,48 @@ class ParameterEstimator(nn.Module):
         self.num_lstms = num_lstms
 
         # LSTM layer that processes the sequence
-        self.lstm = nn.LSTM(input_size=sequence_length, hidden_size=self.hidden_dim, num_layers=num_lstms, batch_first=True)
+        self.lstm = nn.LSTM(input_size=input_neurons, hidden_size=self.hidden_dim, num_layers=num_lstms, batch_first=True)
         
+        # Normalization layer
+        # self.batchnorm = nn.BatchNorm1d(num_features=input_neurons)
+
         # Dense layer to predict the parameters
         lstm_additional_state = 2 # Hidden state and cell state
-        self.fc1 = nn.Linear(self.hidden_dim*self.num_lstms*(lstm_additional_state+input_neurons), output_neurons)
+        # self.fc1 = nn.Linear(self.hidden_dim*self.num_lstms*(lstm_additional_state+input_neurons), output_neurons)
+        self.fc1 = nn.Linear(self.hidden_dim*self.num_lstms*(lstm_additional_state), output_neurons)
+
+        # self.fc1 = nn.Linear(self.hidden_dim*self.num_lstms*(input_neurons), output_neurons)
+        # self.fc2
 
     def forward(self, x):
         # Convert input to torch.float32
         x = x.float()
+        # print(x.shape)
+        # x = self.batchnorm(x)
         hidden_states = Variable(torch.zeros(self.num_lstms, x.shape[0], self.hidden_dim), requires_grad=False)
         cell_states = Variable(torch.zeros(self.num_lstms, x.shape[0], self.hidden_dim), requires_grad=False)
         
         x, (hidden_states, cell_states) = self.lstm(x, (hidden_states, cell_states))
 
+        # print(x.shape)
+        # print(hidden_states.shape)
+        # print(cell_states.shape)
+
         x = x.contiguous().view(x.shape[0], -1)
         hidden_states = hidden_states.contiguous().view(x.shape[0], -1)
         cell_states = hidden_states.contiguous().view(x.shape[0], -1)
-        out = torch.cat((x, hidden_states, cell_states), 1)
+        # print(x.shape)
+        # print(hidden_states.shape)
+        # print(cell_states.shape)
+        out = torch.cat((hidden_states, cell_states), 1)
         fout = self.fc1(out)
         return fout.view(-1, fout.shape[1])
 
     def custom_loss(self, y_pred, y_true):
         squared_error = torch.pow(abs(y_true - y_pred), 2)
-        mean_weighted_error = torch.mean(squared_error)
-        return mean_weighted_error
+        RMS_error = torch.sqrt(torch.mean(squared_error))
+        variance = 1 + torch.var(squared_error)
+        return RMS_error*variance
     
     def RMSE(self, y_pred, y_true):
         # Calculate the squared error
@@ -47,29 +64,38 @@ class ParameterEstimator(nn.Module):
     
     def pre_process(self, traj, labels, window, noise_level=0):
         X = []
-        if len(traj[0]) < window:
-            print(f"Trajectory length smaller than window: {len(traj[0])}")
-            for row in traj:
-                padded_row = row + [0] * (window - len(row))
-                X.append(padded_row)
-        elif len(traj[0]) > window:
-            print(f"Trajectory length larger than window: {len(traj[0])}")
-            X = [row[-window:] for row in traj]
+        traj = np.array(traj)
+        if traj.ndim == 2:
+            if len(traj) < window:
+                X = np.zeros((len(traj[0]), window))
+                X[:, :len(traj)] = traj.transpose()
+            elif len(traj) > window:
+                X = traj.transpose()
+                X = X[:, -window:]
+            else:
+                X = traj.transpose()
         else:
-            print("Trajectory length is equal to window length")
             X = traj
-
+        
         if noise_level:
-            noiseX = np.random.normal(0, noise_level, size=(len(X), len(X[0]))).astype('float32')
+            num_states = int(len(X)/len(labels))
+            noiseX = np.random.normal(0, noise_level, size=(len(X), len(X[0]), num_states)).astype('float32')
             noiseX = 1 + np.clip(noiseX, -3 * noise_level, 3 * noise_level)
             X = X * noiseX
         
         # Reshape X to the desired dimensions
-        print(f"Shape of X: {np.array(X).shape}")
         X = np.array(X)
-        X = X.transpose(0, 2, 1)
+        if X.ndim == 2:
+            X = X[:, :, np.newaxis]
+            X = X.transpose(2, 1, 0)
+        else:
+            X = X.transpose(0, 1, 2)
 
         scaler = MinMaxScaler(feature_range=(0, 1))
-        scaler.fit(labels)
-        y = scaler.transform(labels).astype('float32')
+        scaler.fit([[0.1, 0.1], [1, 2]])
+        y = np.array(labels)
+        if y.ndim == 1:
+            y = scaler.transform(y.reshape(1, -1)).astype('float32')
+        else:
+            y = scaler.transform(y).astype('float32')
         return torch.tensor(X), torch.tensor(y)

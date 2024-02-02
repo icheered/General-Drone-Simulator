@@ -31,17 +31,25 @@ logger = configure(log_path, ["stdout", "tensorboard"])
 # Train on a dynamic environment
 # Train on a dynamic environment with exact knowledge of domain
 scenarios = {
-    "static": {
-        "domain_randomization": False,
-        "domain_knowledge": False
-    },
-    "generalized": {
+    # "static": {
+    #     "domain_randomization": False,
+    #     "domain_knowledge": False,
+    #     "domain_estimation": False,
+    # },
+    # "generalized": {
+    #     "domain_randomization": True,
+    #     "domain_knowledge": False,
+    #     "domain_estimation": False,
+    # },
+    # "generalized_with_knowledge": {
+    #     "domain_randomization": True,
+    #     "domain_knowledge": True,
+    #     "domain_estimation": False,
+    # },
+    "generalized_with_estimation": {
         "domain_randomization": True,
-        "domain_knowledge": False
-    },
-    "generalized_with_knowledge": {
-        "domain_randomization": True,
-        "domain_knowledge": True
+        "domain_knowledge": True,
+        "domain_estimation": True,
     }
 }
 
@@ -80,7 +88,7 @@ for name, scenario in scenarios.items():
     callbacks = [eval_callback]
 
     # Create the model
-    tensorboard_log_path = os.path.join(log_path, f"{model_type}{name}")
+    tensorboard_log_path = os.path.join(log_path, f"{name}")
     model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=tensorboard_log_path)
 
     # Do the actual learning
@@ -92,6 +100,6 @@ for name, scenario in scenarios.items():
 
     # Save the model and graph to disk
     training_duration = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
-    filename = f"{model_type}{name}"
+    filename = f"{model_type}_{name}"
     model.save(os.path.join(save_path, filename))
     print(f"Model saved to {filename}")

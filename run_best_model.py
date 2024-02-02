@@ -21,7 +21,7 @@ def main():
 
     # Read config and set up tensorboard logging
     config = read_config("config.yaml")
-    filename = "PPO_generalized_with_knowledge"
+    filename = "best_model"
 
     env = DroneEnv(config, render_mode="human", max_episode_steps=1000)
     try:

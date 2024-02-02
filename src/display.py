@@ -437,7 +437,7 @@ class Display:
         
         # For debugging purposes
         #self._draw_start_point(drone)
-        #self._draw_state(drone)
+        self._draw_state(drone)
         #self._draw_simulation_stats(drone)
         pygame.display.flip()
 
